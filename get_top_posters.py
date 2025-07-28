@@ -9,7 +9,7 @@ def fetch_top_posters(community_url, num_users):
     # GraphQL query
     query = """
     {
-        messages(first: 10) {
+        messages(first: 100) {
             edges {
             node {
                 id
