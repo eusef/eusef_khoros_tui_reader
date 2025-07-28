@@ -51,8 +51,13 @@ def fetch_top_posters(community_url, num_users):
 
     # Check if request was successful
     if response.status_code == 200:
-
         response_dict = response.json()  # Safely parse JSON response
+
+        if args.write_output:
+            with open(args.output_file, 'w') as f:
+                json.dump(response_dict, f, indent=4)
+            print(f"Output written to {args.output_file}")
+            return response_dict
 
         # Extract the messages data
         messages = response_dict.get('data', {}).get('messages', {}).get('edges', [])
@@ -77,6 +82,16 @@ if __name__ == "__main__":
     # Get hostname and auth token from auth module
     hostname = get_hostname()
     auth_token = get_auth_token()
+
+    # Add command line argument parsing
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Fetch top posters from the community')
+    parser.add_argument('--write-output', '-w', action='store_true',
+                       help='Write results to output file for testing')
+    parser.add_argument('--output-file', '-o', default='top_posters_output.json',
+                       help='Output file path (default: top_posters_output.json)')
+    args = parser.parse_args()
     
     try:
         result = fetch_top_posters(hostname, 10)

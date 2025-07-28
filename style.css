@@ -1,0 +1,16 @@
+#main {
+    layout: horizontal;
+    height: 100%;
+}
+
+#message-list {
+    width: 30%;
+    border: round cornflowerblue;
+}
+
+#message-viewer {
+    width: 70%;
+    border: round lightseagreen;
+    padding: 1 2;
+    overflow: auto;
+}
