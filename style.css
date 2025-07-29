@@ -1,43 +1,74 @@
 #main {
     layout: horizontal;
     height: 100%;
+    background: #1d2021; /* darker Gruvbox base */
+    color: #ebdbb2;       /* light tan */
+}
+
+#loading-screen {
+    height: 100%;
+    width: 100%;
+    background: #1d2021;
+    color: #83a598; /* faded teal */
+    text-align: center;
+    text-style: bold;
+    content-align: center middle;
+    border: round;
+    border-title-color: #b8bb26; /* bright yellow-green */
+    border-title-background: #282828;
+    border-title-style: bold;
 }
 
 #message-list {
     width: 30%;
-    border: round cornflowerblue;
+    border: round;
+    border-title-color: #83a598; /* faded teal */
+    background: #282828;
+    color: #ebdbb2;
+    text-style: bold;
 }
 
 #message-viewer {
     width: 70%;
-    border: round lightseagreen;
+    border: round;
+    border-title-color: #b8bb26; /* bright yellow-green */
+    background: #1d2021;
+    color: #ebdbb2;
     padding: 1 2;
     overflow: auto;
+    text-style: italic;
 }
 
 #filter-input {
     dock: top;
     height: 3;
-    background: blue;
-    border: round white;
+    background: #3c3836;       /* mid-dark grey */
+    border: round;
+    border-title-color: #d65d0e; /* orange for contrast */
     margin: 1;
+    color: #fbf1c7;             /* light cream text */
+    text-style: bold;
 }
 
 #debug-widget {
     dock: bottom;
     height: 3;
-    background: darkblue;
-    border: round white;
+    background: #504945;       /* greyish brown */
+    border: round;
+    border-title-color: #928374; /* muted grey */
     margin: 1;
     display: none;
+    color: #ebdbb2;
 }
 
 #keyboard-commands {
     dock: bottom;
     height: 3;
-    background: darkgreen;
-    border: round white;
+    background: #458588;       /* blue-teal */
+    border: round;
+    border-title-color: #282828;
     margin: 0;
     padding: 0;
-    color: white;
+    color: #fbf1c7;
+    text-style: bold;
 }
