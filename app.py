@@ -14,6 +14,7 @@ from message_list import MessageList, MessageSelected, load_messages_from_json
 from message_viewer import MessageViewer
 from keyboard_commands import KeyboardCommands
 from loading_screen import LoadingScreen
+from debug_widget import DebugWidget
 
 # Load messages from JSON file
 MESSAGES = load_messages_from_json("top_posters_output.json")
@@ -35,16 +36,6 @@ class FilterInput(Input):
         self.styles.display = "none"
         self.value = ""
         self.blur()
-
-class DebugWidget(Static):
-    """A widget to display debug information on screen"""
-    
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.styles.display = "none"
-    
-    def update_debug_info(self, info: str) -> None:
-        self.update(f"[red]DEBUG:[/red] {info}")
 
 class EmailApp(App):
     CSS_PATH = "style.css"
