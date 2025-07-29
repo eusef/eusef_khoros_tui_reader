@@ -14,3 +14,19 @@
     padding: 1 2;
     overflow: auto;
 }
+
+#filter-input {
+    dock: top;
+    height: 3;
+    background: blue;
+    border: round white;
+    margin: 1;
+}
+
+#debug-widget {
+    dock: bottom;
+    height: 3;
+    background: darkblue;
+    border: round white;
+    margin: 1;
+}

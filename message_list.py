@@ -119,17 +119,20 @@ class MessageList(ListView):
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
         log.info(f"Message highlighted at index {event.list_view.index}")
-        if 0 <= event.list_view.index < len(self.messages):
+        if (event.list_view.index is not None and 
+            0 <= event.list_view.index < len(self.messages)):
             selected_message = self.messages[event.list_view.index]
             log.info(f"Highlighted message: {selected_message}")
             self.post_message(MessageSelected(selected_message))
     
     def update_messages(self, messages: list) -> None:
         """Update the messages displayed in the list"""
+        log.info(f"Updating message list with {len(messages)} messages")
         self.messages = messages
         self.clear()
         for msg in self.messages:
             self.append(ListItem(MessageItem(msg["subject"], msg["age"])))
+        log.info(f"Message list updated, now has {len(self.messages)} items")
     
     def load_messages_from_file(self, json_file_path: str) -> None:
         """Load messages from a JSON file and update the list"""
