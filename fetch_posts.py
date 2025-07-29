@@ -2,7 +2,7 @@ import requests
 import json
 from auth import get_auth_token, get_hostname
 
-def fetch_top_posters(community_url, num_users):
+def fetch_posts(community_url, num_users):
     # Get authentication token
     auth_token = get_auth_token()
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     # Add command line argument parsing
     import argparse
     
-    parser = argparse.ArgumentParser(description='Fetch top posters from the community')
+    parser = argparse.ArgumentParser(description='Fetch posts from the community')
     parser.add_argument('--write-output', '-w', action='store_true',
                        help='Write results to output file for testing')
     parser.add_argument('--output-file', '-o', default='top_posters_output.json',
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     try:
-        result = fetch_top_posters(hostname, 10)
+        result = fetch_posts(hostname, 10)
     except Exception as e:
         print("Error fetching data:")
         print(f"Technical details: {str(e)}")
