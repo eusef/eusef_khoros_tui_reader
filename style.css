@@ -29,4 +29,15 @@
     background: darkblue;
     border: round white;
     margin: 1;
+    display: none;
+}
+
+#keyboard-commands {
+    dock: bottom;
+    height: 3;
+    background: darkgreen;
+    border: round white;
+    margin: 0;
+    padding: 0;
+    color: white;
 }

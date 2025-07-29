@@ -1,3 +1,4 @@
+import subprocess
 from textual.app import App, ComposeResult
 from textual.containers import Container, Vertical
 from textual.widgets import Static, Input
@@ -8,6 +9,7 @@ from textual.events import Key
 from textual.binding import Binding
 from message_list import MessageList, MessageSelected, load_messages_from_json
 from message_viewer import MessageViewer
+from keyboard_commands import KeyboardCommands
 
 # Load messages from JSON file
 MESSAGES = load_messages_from_json("top_posters_output.json")
@@ -33,6 +35,10 @@ class FilterInput(Input):
 class DebugWidget(Static):
     """A widget to display debug information on screen"""
     
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.styles.display = "none"
+    
     def update_debug_info(self, info: str) -> None:
         self.update(f"[red]DEBUG:[/red] {info}")
 
@@ -47,14 +53,17 @@ class EmailApp(App):
         Binding("q", "quit", "Quit"),
         Binding("/", "filter", "Filter"),
         Binding("escape", "cancel_filter", "Cancel Filter", show=False),
+        Binding("enter", "open_href", "Open in Browser"),
+        Binding("d", "toggle_debug", "Toggle Debug", show=False),
     ]
 
     def compose(self) -> ComposeResult:
         with Container(id="main"):
             yield MessageList(MESSAGES, id="message-list")
             yield MessageViewer(id="message-viewer")
-            yield DebugWidget(id="debug-widget")
             yield FilterInput(id="filter-input")
+            yield KeyboardCommands(id="keyboard-commands")
+            yield DebugWidget(id="debug-widget")
 
     def on_message_selected(self, event: MessageSelected) -> None:
         log.info(f"on_message_selected called with item: {event.item}")
@@ -77,6 +86,57 @@ class EmailApp(App):
         if self.filter_mode:
             self.hide_filter()
     
+    def action_open_href(self) -> None:
+        """Action to open the current message's HREF in the browser"""
+        log.info("action_open_href called")
+        
+        # Get the currently selected message
+        message_list = self.query_one("#message-list", MessageList)
+        log.info(f"Message list index: {message_list.index}")
+        log.info(f"Message list length: {len(message_list.messages)}")
+        
+        if message_list.index is not None and 0 <= message_list.index < len(message_list.messages):
+            selected_message = message_list.messages[message_list.index]
+            log.info(f"Selected message: {selected_message}")
+            
+            if "viewHref" in selected_message and selected_message["viewHref"]:
+                href = selected_message["viewHref"]
+                log.info(f"Opening HREF in browser: {href}")
+                
+                try:
+                    # Use the 'open' command to open URL in default browser
+                    subprocess.run(["open", href], check=True)
+                    debug_widget = self.query_one("#debug-widget", DebugWidget)
+                    debug_widget.update_debug_info(f"Opened: {href}")
+                except subprocess.CalledProcessError as e:
+                    log.error(f"Error opening HREF: {e}")
+                    debug_widget = self.query_one("#debug-widget", DebugWidget)
+                    debug_widget.update_debug_info(f"Error opening HREF: {e}")
+                except FileNotFoundError:
+                    log.error("'open' command not found (not on macOS)")
+                    debug_widget = self.query_one("#debug-widget", DebugWidget)
+                    debug_widget.update_debug_info("'open' command not available on this system")
+            else:
+                log.warning("No viewHref found in selected message")
+                debug_widget = self.query_one("#debug-widget", DebugWidget)
+                debug_widget.update_debug_info("No HREF available for this message")
+        else:
+            log.warning("No message selected")
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info("No message selected")
+    
+    def action_toggle_debug(self) -> None:
+        """Action to toggle debug widget visibility"""
+        log.info("Toggle debug action triggered")
+        debug_widget = self.query_one("#debug-widget", DebugWidget)
+        
+        if debug_widget.styles.display == "none":
+            debug_widget.styles.display = "block"
+            debug_widget.update_debug_info("Debug window shown")
+        else:
+            debug_widget.styles.display = "none"
+            debug_widget.update_debug_info("Debug window hidden")
+    
     def show_filter(self) -> None:
         """Show the filter input"""
         filter_input = self.query_one("#filter-input", FilterInput)
@@ -94,6 +154,9 @@ class EmailApp(App):
         # Clear filter and show all messages
         message_list = self.query_one("#message-list", MessageList)
         message_list.update_messages(MESSAGES)
+        
+        # Give focus back to the message list
+        message_list.focus()
         
         debug_widget = self.query_one("#debug-widget", DebugWidget)
         debug_widget.update_debug_info("Filter cleared")
@@ -149,8 +212,18 @@ class EmailApp(App):
             message_list = self.query_one("#message-list", MessageList)
             # Select the first item (index 0)
             message_list.index = 0
+            # Give focus to the message list
+            message_list.focus()
             # Trigger the selection event manually
             self.on_message_selected(MessageSelected(MESSAGES[0]))
+    
+    def on_key(self, event: Key) -> None:
+        """Handle key events for debugging"""
+        log.info(f"Key pressed: {event.key}")
+        if event.key == "enter" and not self.filter_mode:
+            log.info("Enter key detected - calling action_open_href")
+            self.action_open_href()
+        # Don't call super() since the parent doesn't have on_key
 
 if __name__ == "__main__":
     # Run with debug mode enabled
