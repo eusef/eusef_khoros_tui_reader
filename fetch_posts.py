@@ -1,10 +1,15 @@
 import requests
 import json
+import time
+from datetime import datetime
 from auth import get_auth_token, get_hostname
 
-def fetch_posts(community_url, num_users):
+def fetch_posts(community_url):
+    print(f"[DEBUG] Starting fetch at {datetime.now()}")
+    
     # Get authentication token
     auth_token = get_auth_token()
+    print(f"[DEBUG] Auth token: {auth_token[:20]}..." if auth_token else "[DEBUG] No auth token")
 
     # GraphQL query
     query = """
@@ -32,22 +37,33 @@ def fetch_posts(community_url, num_users):
     variables = {
     }
 
-    # Headers including auth token
+    # Headers including auth token with cache-busting
     headers = {
-        # "Authorization": f"Bearer {auth_token}",
         "Content-Type": "application/json",
-        "li-api-session-key": auth_token
+        "li-api-session-key": auth_token,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
     }
 
     # Make the request
+    url = f"https://{community_url}/t5/s/api/2.1/graphql"
+    print(f"[DEBUG] Making request to: {url}")
+    
+    request_payload = {
+        "query": query,
+        "variables": variables
+    }
+    
     response = requests.post(
-        f"https://{community_url}/t5/s/api/2.1/graphql",
-        json={
-            "query": query,
-            "variables": variables
-        },
-        headers=headers
+        url,
+        json=request_payload,
+        headers=headers,
+        timeout=30
     )
+
+    print(f"[DEBUG] Response status: {response.status_code}")
+    print(f"[DEBUG] Response headers: {dict(response.headers)}")
 
     # Check if request was successful
     if response.status_code == 200:
@@ -61,20 +77,25 @@ def fetch_posts(community_url, num_users):
 
         # Extract the messages data
         messages = response_dict.get('data', {}).get('messages', {}).get('edges', [])
+        print(f"[DEBUG] Found {len(messages)} messages")
 
         # Extract the author information for each message
-        for message in messages:
-            author = message.get('node', {}).get('author', {})
-            print(f"Message ID: {message.get('node', {}).get('id')}")
-            print(f"Author: {author.get('firstName')} {author.get('lastName')}")
-            print(f"Message: {message.get('node', {}).get('body')}")
-            print(f"Subject: {message.get('node', {}).get('subject')}")
-            print(f"Post Time: {message.get('node', {}).get('postTime')}")
-            print(f"View Href: {message.get('node', {}).get('viewHref')}")
-            print("--------------------------------")
+        for i, message in enumerate(messages):
+            node = message.get('node', {})
+            author = node.get('author', {})
+            post_time = node.get('postTime', '')
+            subject = node.get('subject', '')
+            
+            print(f"[DEBUG] Message {i+1}:")
+            print(f"  ID: {node.get('id')}")
+            print(f"  Subject: {subject}")
+            print(f"  Post Time: {post_time}")
+            print(f"  Author: {author.get('firstName')} {author.get('lastName')}")
+            print("  ---")
 
         return response.json()
     else:
+        print(f"[DEBUG] Request failed: {response.text}")
         raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
 
 # Example usage:
@@ -94,7 +115,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     try:
-        result = fetch_posts(hostname, 10)
+        result = fetch_posts(hostname)
     except Exception as e:
         print("Error fetching data:")
         print(f"Technical details: {str(e)}")
