@@ -5,11 +5,14 @@ from datetime import datetime
 from auth import get_auth_token, get_hostname
 
 def fetch_posts(community_url, message_count=100):
-    print(f"[DEBUG] Starting fetch at {datetime.now()}")
+    print(f"Starting fetch at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Get authentication token
     auth_token = get_auth_token()
-    print(f"[DEBUG] Auth token: {auth_token[:20]}..." if auth_token else "[DEBUG] No auth token")
+    if not auth_token:
+        print("Error: No authentication token available")
+        return None
+    print("Authentication successful")
 
     # GraphQL query
     query = """
@@ -49,7 +52,7 @@ def fetch_posts(community_url, message_count=100):
 
     # Make the request
     url = f"https://{community_url}/t5/s/api/2.1/graphql"
-    print(f"[DEBUG] Making request to: {url}")
+    print(f"Fetching messages from: {community_url}")
     
     request_payload = {
         "query": query,
@@ -63,8 +66,7 @@ def fetch_posts(community_url, message_count=100):
         timeout=30
     )
 
-    print(f"[DEBUG] Response status: {response.status_code}")
-    print(f"[DEBUG] Response headers: {dict(response.headers)}")
+    print(f"Response status: {response.status_code}")
 
     # Check if request was successful
     if response.status_code == 200:
@@ -78,7 +80,7 @@ def fetch_posts(community_url, message_count=100):
 
         # Extract the messages data
         messages = response_dict.get('data', {}).get('messages', {}).get('edges', [])
-        print(f"[DEBUG] Found {len(messages)} messages")
+        print(f"Found {len(messages)} messages")
 
         # Extract the author information for each message
         for i, message in enumerate(messages):
@@ -87,7 +89,7 @@ def fetch_posts(community_url, message_count=100):
             post_time = node.get('postTime', '')
             subject = node.get('subject', '')
             
-            print(f"[DEBUG] Message {i+1}:")
+            print(f"Message {i+1}:")
             print(f"  ID: {node.get('id')}")
             print(f"  Subject: {subject}")
             print(f"  Post Time: {post_time}")
@@ -96,7 +98,7 @@ def fetch_posts(community_url, message_count=100):
 
         return response.json()
     else:
-        print(f"[DEBUG] Request failed: {response.text}")
+        print(f"Request failed: {response.text}")
         raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
 
 # Example usage:
@@ -119,8 +121,8 @@ if __name__ == "__main__":
     
     try:
         result = fetch_posts(hostname, args.count)
+        print(f"Successfully fetched {args.count} messages")
     except Exception as e:
         print("Error fetching data:")
         print(f"Technical details: {str(e)}")
         exit(1)
-    print(result)
