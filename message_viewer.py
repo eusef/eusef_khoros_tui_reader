@@ -2,6 +2,7 @@ from textual.widgets import Static
 from textual.reactive import reactive
 from textual import log
 from html2text import HTML2Text
+import re
 
 
 class MessageViewer(Static):
@@ -32,26 +33,39 @@ class MessageViewer(Static):
         # Format all message data fields
         message_data = value
         
-        # Convert HTML body to Markdown for better terminal display
+        # Convert HTML body to plain text for better terminal display
         h = HTML2Text()
         h.ignore_links = False
         h.body_width = 0  # Disable line wrapping
-        markdown_body = h.handle(message_data["body"])
+        h.ignore_images = True  # Ignore images to avoid markup issues
+        h.ignore_emphasis = True  # Ignore emphasis to avoid markup issues
+        plain_text_body = h.handle(message_data["body"])
+        
+        # Clean the text to remove any remaining problematic characters
+        # Remove any remaining HTML entities and clean up whitespace
+        plain_text_body = re.sub(r'&[a-zA-Z0-9#]+;', '', plain_text_body)
+        # Remove any markdown-style links that might contain problematic characters
+        plain_text_body = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', plain_text_body)
+        # Remove any remaining URLs that might contain special characters
+        plain_text_body = re.sub(r'https?://[^\s]+', '[URL]', plain_text_body)
+        # Remove any remaining special characters that could cause markup issues
+        plain_text_body = re.sub(r'[^\w\s\.\,\!\?\-\:\;\(\)]', '', plain_text_body)
+        plain_text_body = re.sub(r'\s+', ' ', plain_text_body).strip()
         
         # Create formatted display of all fields
-        formatted_content = self._format_message_content(message_data, markdown_body)
+        formatted_content = self._format_message_content(message_data, plain_text_body)
         
         log.info(f"Formatted content length: {len(formatted_content)}")
         # Update with formatted content
         self.update(formatted_content)
     
-    def _format_message_content(self, message_data: dict, markdown_body: str) -> str:
+    def _format_message_content(self, message_data: dict, plain_text_body: str) -> str:
         """
         Format message data into a readable display string.
         
         Args:
             message_data: Dictionary containing message information
-            markdown_body: The message body converted to markdown
+            plain_text_body: The message body converted to plain text
             
         Returns:
             Formatted string for display
@@ -70,7 +84,7 @@ class MessageViewer(Static):
   Last Name: {message_data["author"]["lastName"] or "N/A"}
 
 [bold blue]Message Body:[/bold blue]
-{markdown_body}
+{plain_text_body}
 """
     
     def set_message(self, message_data: dict) -> None:
