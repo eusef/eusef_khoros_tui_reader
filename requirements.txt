@@ -7,3 +7,4 @@ requests==2.32.4
 urllib3==2.5.0
 textual>=5.0.0
 html2text>=2025.4.0
+google-generativeai>=0.8.0

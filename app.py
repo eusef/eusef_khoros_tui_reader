@@ -15,6 +15,8 @@ from message_viewer import MessageViewer
 from keyboard_commands import KeyboardCommands
 from loading_screen import LoadingScreen
 from debug_widget import DebugWidget
+from gemini_summarizer import GeminiSummarizer
+from summary_widget import SummaryWidget
 
 # Load messages from JSON file
 MESSAGES = load_messages_from_json("top_posters_output.json")
@@ -53,12 +55,16 @@ class EmailApp(App):
         Binding("escape", "cancel_filter", "Cancel Filter", show=False),
         Binding("enter", "open_href", "Open in Browser"),
         Binding("d", "toggle_debug", "Toggle Debug", show=False),
+        Binding("s", "summarize", "Summarize Message"),
+        Binding("t", "test_gemini", "Test Gemini Connection", show=False),
     ]
 
     def compose(self) -> ComposeResult:
         with Container(id="main"):
-            yield MessageList(MESSAGES, id="message-list")
-            yield MessageViewer(id="message-viewer")
+            with Container(id="content-area"):
+                yield MessageList(MESSAGES, id="message-list")
+                yield MessageViewer(id="message-viewer")
+            yield SummaryWidget(id="summary-widget")
             yield FilterInput(id="filter-input")
             yield KeyboardCommands(id="keyboard-commands")
             yield DebugWidget(id="debug-widget")
@@ -66,12 +72,18 @@ class EmailApp(App):
     
     def on_mount(self) -> None:
         """Called when the app is mounted - show loading screen first"""
+        # Initialize Gemini summarizer
+        self.gemini_summarizer = GeminiSummarizer()
+        
         # Initially hide the main interface and show loading screen
         self.hide_main_interface()
         self.show_loading_screen()
         
         # Start loading messages asynchronously
         self.call_after_refresh(self.load_messages_async)
+        
+        # Store reference to message list for later use
+        self.message_list = self.query_one("#message-list", MessageList)
     
     async def load_messages_async(self) -> None:
         """Load messages asynchronously and transition to main interface when complete"""
@@ -125,14 +137,14 @@ class EmailApp(App):
     
     def hide_main_interface(self) -> None:
         """Hide the main interface widgets"""
-        message_list = self.query_one("#message-list", MessageList)
-        message_viewer = self.query_one("#message-viewer", MessageViewer)
+        content_area = self.query_one("#content-area", Container)
+        summary_widget = self.query_one("#summary-widget", SummaryWidget)
         filter_input = self.query_one("#filter-input", FilterInput)
         keyboard_commands = self.query_one("#keyboard-commands", KeyboardCommands)
         debug_widget = self.query_one("#debug-widget", DebugWidget)
         
-        message_list.styles.display = "none"
-        message_viewer.styles.display = "none"
+        content_area.styles.display = "none"
+        summary_widget.styles.display = "none"
         filter_input.styles.display = "none"
         keyboard_commands.styles.display = "none"
         debug_widget.styles.display = "none"
@@ -144,14 +156,14 @@ class EmailApp(App):
     
     def show_main_interface(self) -> None:
         """Show the main interface widgets"""
-        message_list = self.query_one("#message-list", MessageList)
-        message_viewer = self.query_one("#message-viewer", MessageViewer)
+        content_area = self.query_one("#content-area", Container)
+        summary_widget = self.query_one("#summary-widget", SummaryWidget)
         filter_input = self.query_one("#filter-input", FilterInput)
         keyboard_commands = self.query_one("#keyboard-commands", KeyboardCommands)
         debug_widget = self.query_one("#debug-widget", DebugWidget)
         
-        message_list.styles.display = "block"
-        message_viewer.styles.display = "block"
+        content_area.styles.display = "block"
+        summary_widget.styles.display = "none"  # Keep hidden initially
         filter_input.styles.display = "none"  # Keep hidden initially
         keyboard_commands.styles.display = "block"
         debug_widget.styles.display = "none"  # Keep hidden initially
@@ -176,11 +188,11 @@ class EmailApp(App):
             message_list.index = 0
             # Give focus to the message list
             message_list.focus()
-            # Trigger the selection event manually
-            self.on_message_selected(MessageSelected(MESSAGES[0]))
+            # The MessageSelected event will be handled automatically by the event handler
         
         self.loading_complete = True
 
+    @on(MessageSelected)
     def on_message_selected(self, event: MessageSelected) -> None:
         log.info(f"on_message_selected called with item: {event.item}")
         viewer = self.query_one("#message-viewer", MessageViewer)
@@ -189,6 +201,11 @@ class EmailApp(App):
         viewer.set_message(event.item)
         debug_widget.update_debug_info(f"Selected: {event.item['subject'][:50]}...")
         log.info("Set viewer content")
+        
+        # Hide summary when a new message is selected
+        summary_widget = self.query_one("#summary-widget", SummaryWidget)
+        if summary_widget:
+            summary_widget.hide_summary()
 
     def action_filter(self) -> None:
         """Action to show filter input"""
@@ -248,10 +265,121 @@ class EmailApp(App):
         
         if debug_widget.styles.display == "none":
             debug_widget.styles.display = "block"
-            debug_widget.update_debug_info("Debug window shown")
+            # Show Gemini status when debug is first shown
+            gemini_status = self.gemini_summarizer.get_status_message()
+            debug_widget.update_debug_info(f"Debug window shown | {gemini_status}")
         else:
             debug_widget.styles.display = "none"
             debug_widget.update_debug_info("Debug window hidden")
+    
+    def action_summarize(self) -> None:
+        """Action to summarize the currently selected message using Gemini"""
+        log.info("Summarize action triggered")
+        
+        # Get the currently selected message
+        message_list = self.query_one("#message-list", MessageList)
+        log.info(f"Message list index: {message_list.index}")
+        log.info(f"Message list length: {len(message_list.messages)}")
+        
+        if message_list.index is not None and 0 <= message_list.index < len(message_list.messages):
+            selected_message = message_list.messages[message_list.index]
+            log.info(f"Selected message for summarization: {selected_message}")
+            
+            # Check if summary is already visible - if so, hide it
+            summary_widget = self.query_one("#summary-widget", SummaryWidget)
+            log.info(f"Summary widget found: {summary_widget}")
+            log.info(f"Summary widget current display: {summary_widget.styles.display}")
+            
+            if summary_widget.styles.display != "none":
+                log.info("Summary already visible, hiding it")
+                summary_widget.hide_summary()
+                debug_widget = self.query_one("#debug-widget", DebugWidget)
+                debug_widget.update_debug_info("Summary hidden")
+                return
+            
+            # Show summary widget and start loading
+            log.info("Showing summary widget")
+            summary_widget.show_summary()
+            summary_widget.set_loading(True)
+            
+            # Start async summarization
+            self.call_after_refresh(self.summarize_message_async, selected_message)
+            
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info("Generating summary with Gemini...")
+        else:
+            log.warning("No message selected for summarization")
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info("No message selected for summarization")
+    
+    async def summarize_message_async(self, message_data: dict) -> None:
+        """Asynchronously summarize a message using Gemini"""
+        try:
+            log.info("Starting message summarization")
+            
+            # Generate summary
+            summary = await self.gemini_summarizer.summarize_message(message_data)
+            
+            # Update summary widget
+            summary_widget = self.query_one("#summary-widget", SummaryWidget)
+            summary_widget.set_summary(summary)
+            
+            # Update debug info
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info("Summary generated successfully")
+            
+            log.info("Message summarization completed")
+            
+        except Exception as e:
+            log.error(f"Error during summarization: {e}")
+            
+            # Show error in summary widget
+            summary_widget = self.query_one("#summary-widget", SummaryWidget)
+            summary_widget.set_summary(f"Error generating summary: {str(e)}")
+            
+            # Update debug info
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info(f"Summarization error: {str(e)}")
+    
+    def action_test_gemini(self) -> None:
+        """Action to test the Gemini API connection"""
+        log.info("Test Gemini action triggered")
+        
+        if not hasattr(self, 'gemini_summarizer'):
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info("Gemini summarizer not initialized")
+            return
+        
+        # Show debug widget if hidden
+        debug_widget = self.query_one("#debug-widget", DebugWidget)
+        if debug_widget.styles.display == "none":
+            debug_widget.styles.display = "block"
+        
+        debug_widget.update_debug_info("Testing Gemini connection...")
+        
+        # Start async test
+        self.call_after_refresh(self.test_gemini_async)
+    
+    async def test_gemini_async(self) -> None:
+        """Asynchronously test the Gemini API connection"""
+        try:
+            log.info("Starting Gemini connection test")
+            
+            # Test connection
+            result = await self.gemini_summarizer.test_connection()
+            
+            # Update debug info
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info(f"Gemini test result: {result}")
+            
+            log.info(f"Gemini test completed: {result}")
+            
+        except Exception as e:
+            log.error(f"Error during Gemini test: {e}")
+            
+            # Update debug info
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info(f"Gemini test error: {str(e)}")
     
     def show_filter(self) -> None:
         """Show the filter input"""

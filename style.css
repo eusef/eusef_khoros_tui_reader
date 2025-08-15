@@ -1,8 +1,13 @@
 #main {
-    layout: horizontal;
+    layout: vertical;
     height: 100%;
     background: #1d2021; /* darker Gruvbox base */
     color: #ebdbb2;       /* light tan */
+}
+
+#content-area {
+    layout: horizontal;
+    height: 70%;
 }
 
 #loading-screen {
@@ -71,4 +76,18 @@
     padding: 0;
     color: #fbf1c7;
     text-style: bold;
+}
+
+#summary-widget {
+    width: 100%;
+    height: auto;
+    min-height: 6;
+    border: round;
+    border-title-color: #d79921; /* warm yellow */
+    background: #3c3836;
+    color: #ebdbb2;
+    padding: 1 2;
+    margin: 1 0;
+    text-style: bold;
+    display: none;
 }

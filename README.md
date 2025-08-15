@@ -6,6 +6,26 @@ A terminal-based user interface for reading Khoros forum messages using Textual.
 
 1. python -m venv .venv && pip install -r requirements.txt
 
+## Gemini AI Integration
+
+This application includes AI-powered message summarization using Google's Gemini API. To use this feature:
+
+1. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Set the environment variable: `export GEMINI_API_KEY=your_api_key_here`
+3. Press `s` while viewing a message to generate an AI summary
+
+**Note:** The Gemini API requires an internet connection and may have usage limits based on your Google Cloud account.
+
+### Testing Gemini Integration
+
+Before running the main application, you can test your Gemini API setup:
+
+```bash
+python test_gemini.py
+```
+
+This will verify your API key and test the connection to ensure everything is working correctly.
+
 ## Components
 
 ### MessageList (`message_list.py`)

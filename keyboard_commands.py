@@ -17,7 +17,9 @@ class KeyboardCommands(Static):
             "[yellow]ESC[/yellow] - Cancel filter mode",
             "[yellow]↑/↓[/yellow] - Navigate message list",
             "[yellow]Enter[/yellow] - Open message in browser",
+            "[yellow]s[/yellow] - Summarize message with AI",
             "[yellow]d[/yellow] - Toggle debug window",
+            "[yellow]t[/yellow] - Test Gemini connection",
             # "[yellow]Tab[/yellow] - Switch between panels"
         ]
         
