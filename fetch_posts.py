@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 from auth import get_auth_token, get_hostname
 
-def fetch_posts(community_url):
+def fetch_posts(community_url, message_count=100):
     print(f"[DEBUG] Starting fetch at {datetime.now()}")
     
     # Get authentication token
@@ -13,8 +13,8 @@ def fetch_posts(community_url):
 
     # GraphQL query
     query = """
-    {
-        messages(first: 100) {
+    query($messageCount: Int!) {
+        messages(first: $messageCount) {
             edges {
             node {
                 id
@@ -35,6 +35,7 @@ def fetch_posts(community_url):
 
     # Variables for the query
     variables = {
+        "messageCount": message_count
     }
 
     # Headers including auth token with cache-busting
@@ -112,10 +113,12 @@ if __name__ == "__main__":
                        help='Write results to output file for testing')
     parser.add_argument('--output-file', '-o', default='top_posters_output.json',
                        help='Output file path (default: top_posters_output.json)')
+    parser.add_argument('--count', '-c', type=int, default=100,
+                       help='Number of messages to fetch (default: 100)')
     args = parser.parse_args()
     
     try:
-        result = fetch_posts(hostname)
+        result = fetch_posts(hostname, args.count)
     except Exception as e:
         print("Error fetching data:")
         print(f"Technical details: {str(e)}")
