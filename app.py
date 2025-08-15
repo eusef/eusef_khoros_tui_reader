@@ -70,8 +70,58 @@ class EmailApp(App):
         self.hide_main_interface()
         self.show_loading_screen()
         
-        # Schedule the transition to main interface after 3 seconds
-        self.set_timer(3.0, self.transition_to_main_interface)
+        # Start loading messages asynchronously
+        self.call_after_refresh(self.load_messages_async)
+    
+    async def load_messages_async(self) -> None:
+        """Load messages asynchronously and transition to main interface when complete"""
+        try:
+            # Check if the JSON file exists and has content
+            import os
+            json_file = "top_posters_output.json"
+            
+            # Update loading message to show we're checking the file
+            loading_screen = self.query_one("#loading-screen", LoadingScreen)
+            loading_screen.update("⠋ Checking message data...")
+            
+            if not os.path.exists(json_file):
+                self.handle_loading_error(f"JSON file '{json_file}' not found")
+                return
+            
+            # Check file size to ensure it has content
+            file_size = os.path.getsize(json_file)
+            if file_size == 0:
+                self.handle_loading_error(f"JSON file '{json_file}' is empty")
+                return
+            
+            # Update loading message to show we're processing
+            loading_screen.update("⠙ Processing messages...")
+            
+            # Small delay to show loading animation (can be adjusted)
+            await asyncio.sleep(0.3)
+            
+            # Check if messages loaded successfully
+            if MESSAGES:
+                # Transition to main interface
+                self.transition_to_main_interface()
+            else:
+                # Handle case where no messages were loaded
+                self.handle_no_messages()
+        except Exception as e:
+            log.error(f"Error loading messages: {e}")
+            self.handle_loading_error(str(e))
+    
+    def handle_no_messages(self) -> None:
+        """Handle case where no messages were loaded"""
+        loading_screen = self.query_one("#loading-screen", LoadingScreen)
+        loading_screen.update_message("No messages found. Press 'q' to quit.")
+        # Keep loading screen visible with error message
+    
+    def handle_loading_error(self, error_msg: str) -> None:
+        """Handle loading errors"""
+        loading_screen = self.query_one("#loading-screen", LoadingScreen)
+        loading_screen.update_message(f"Error loading messages: {error_msg}\nPress 'q' to quit.")
+        # Keep loading screen visible with error message
     
     def hide_main_interface(self) -> None:
         """Hide the main interface widgets"""
@@ -108,8 +158,11 @@ class EmailApp(App):
     
     def transition_to_main_interface(self) -> None:
         """Transition from loading screen to main interface"""
-        # Hide loading screen
+        # Set loading screen to not loading state
         loading_screen = self.query_one("#loading-screen", LoadingScreen)
+        loading_screen.set_loading_state(False)
+        
+        # Hide loading screen
         loading_screen.hide()
         
         # Show main interface
