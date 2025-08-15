@@ -12,4 +12,7 @@ echo "Fetching $MESSAGE_COUNT messages..."
 env $(op inject -i ./.env.template | xargs) \
   python ./fetch_posts.py --write-output --output-file ./top_posters_output.json --count $MESSAGE_COUNT
 
-python ./app.py
+echo "Starting TUI application..."
+
+env $(op inject -i ./.env.template | xargs) \
+  python ./app.py
