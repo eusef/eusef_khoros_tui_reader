@@ -307,6 +307,8 @@ class EmailApp(App):
                 summary_widget.hide_summary()
                 debug_widget = self.query_one("#debug-widget", DebugWidget)
                 debug_widget.update_debug_info("Summary hidden")
+                # Give focus back to the message list
+                message_list.focus()
                 return
             
             # Show summary widget and start loading
@@ -319,6 +321,9 @@ class EmailApp(App):
             
             debug_widget = self.query_one("#debug-widget", DebugWidget)
             debug_widget.update_debug_info("Generating summary with Gemini...")
+            
+            # Give focus back to the message list
+            message_list.focus()
         else:
             log.warning("No message selected for summarization")
             debug_widget = self.query_one("#debug-widget", DebugWidget)
@@ -460,6 +465,10 @@ class EmailApp(App):
             filter_input.styles.display = "none"
             filter_input.blur()
             self.filter_mode = False
+            
+            # Give focus back to the message list
+            message_list = self.query_one("#message-list", MessageList)
+            message_list.focus()
 
 
     

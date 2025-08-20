@@ -51,12 +51,8 @@ class SummaryWidget(Static):
         log.info(f"SummaryWidget.render() called - is_loading: {self.is_loading}, text: {self.summary_text}")
         
         if self.is_loading:
-            return f"""
-[bold blue]AI Summary[/bold blue]
-[dim]⠋ {self.summary_text}[/dim]
-"""
+            return f"""[bold blue]AI Summary[/bold blue]
+[dim]⠋ {self.summary_text}[/dim]"""
         else:
-            return f"""
-[bold blue]AI Summary[/bold blue]
-{self.summary_text}
-"""
+            return f"""[bold blue]AI Summary[/bold blue]
+{self.summary_text}"""
