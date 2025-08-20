@@ -52,7 +52,7 @@ class EmailApp(App):
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("/", "filter", "Filter"),
-        Binding("escape", "cancel_filter", "Cancel Filter", show=False),
+        Binding("escape", "cancel_or_dismiss", "Cancel Filter/Dismiss Summary", show=False),
         Binding("enter", "open_href", "Open in Browser"),
         Binding("d", "toggle_debug", "Toggle Debug", show=False),
         Binding("s", "summarize", "Summarize Message"),
@@ -213,10 +213,22 @@ class EmailApp(App):
         if not self.filter_mode:
             self.show_filter()
     
-    def action_cancel_filter(self) -> None:
-        """Action to hide filter input"""
-        log.info("Cancel filter action triggered")
+    def action_cancel_or_dismiss(self) -> None:
+        """Action to hide filter input or dismiss summary window"""
+        log.info("Cancel or dismiss action triggered")
+        
+        # Check if summary widget is visible and dismiss it first
+        summary_widget = self.query_one("#summary-widget", SummaryWidget)
+        if summary_widget.styles.display != "none":
+            log.info("Summary widget visible, dismissing it")
+            summary_widget.hide_summary()
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info("Summary dismissed")
+            return
+        
+        # If no summary visible, handle filter cancellation
         if self.filter_mode:
+            log.info("Filter mode active, canceling filter")
             self.hide_filter()
     
     def action_open_href(self) -> None:

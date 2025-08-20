@@ -14,7 +14,7 @@ class KeyboardCommands(Static):
             "[bold cyan]Keyboard Commands:[/bold cyan]",
             "[yellow]q[/yellow] - Quit the application",
             "[yellow]/[/yellow] - Open filter mode",
-            "[yellow]ESC[/yellow] - Cancel filter mode",
+            "[yellow]ESC[/yellow] - Cancel filter mode / Dismiss summary",
             "[yellow]↑/↓[/yellow] - Navigate message list",
             "[yellow]Enter[/yellow] - Open message in browser",
             "[yellow]s[/yellow] - Summarize message with AI",
