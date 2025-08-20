@@ -7,7 +7,8 @@
 
 #content-area {
     layout: horizontal;
-    height: 70%;
+    height: 100%;
+    min-height: 0;
 }
 
 #loading-screen {
@@ -26,15 +27,18 @@
 
 #message-list {
     width: 30%;
+    height: 100%;
     border: round;
     border-title-color: #83a598; /* faded teal */
     background: #282828;
     color: #ebdbb2;
     text-style: bold;
+    min-height: 0;
 }
 
 #message-viewer {
     width: 70%;
+    height: 100%;
     border: round;
     border-title-color: #b8bb26; /* bright yellow-green */
     background: #1d2021;
@@ -42,6 +46,7 @@
     padding: 1 2;
     overflow: auto;
     text-style: italic;
+    min-height: 0;
 }
 
 #filter-input {
