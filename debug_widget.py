@@ -8,4 +8,4 @@ class DebugWidget(Static):
         self.styles.display = "none"
     
     def update_debug_info(self, info: str) -> None:
-        self.update(f"[red]DEBUG:[/red] {info}") 
+        self.update(f"[red]DEBUG:[/red] {info}\n[dim]Press d to dismiss[/dim]") 
