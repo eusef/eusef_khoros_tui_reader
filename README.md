@@ -61,7 +61,7 @@ If you just want to run individually
 	env $(op inject -i ./.env.template | xargs) python ./auth.py
 
 To generate the post data for the viewer
-	env $(op inject -i ./.env.template | xargs) python ./fetch_posts.py --write-output --output-file ./top_posters_output.json
+	env $(op inject -i ./.env.template | xargs) python ./fetch_posts.py --write-output --output-file ./current_data.json
 
 To run the viewer
 	python ./app.py

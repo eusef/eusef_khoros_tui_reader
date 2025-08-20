@@ -19,7 +19,7 @@ from gemini_summarizer import GeminiSummarizer
 from summary_widget import SummaryWidget
 
 # Load messages from JSON file
-MESSAGES = load_messages_from_json("top_posters_output.json")
+MESSAGES = load_messages_from_json("current_data.json")
 
 class FilterInput(Input):
     """A filter input widget that can be shown/hidden"""
@@ -90,7 +90,7 @@ class EmailApp(App):
         try:
             # Check if the JSON file exists and has content
             import os
-            json_file = "top_posters_output.json"
+            json_file = "current_data.json"
             
             # Update loading message to show we're checking the file
             loading_screen = self.query_one("#loading-screen", LoadingScreen)

@@ -28,7 +28,7 @@ class ExampleApp(App):
         message_list = self.query_one("#message-list", MessageList)
         
         # Option 1: Load from file
-        message_list.load_messages_from_file("top_posters_output.json")
+        message_list.load_messages_from_file("current_data.json")
         
         # Option 2: Update with custom messages
         # custom_messages = [

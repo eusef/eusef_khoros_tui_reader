@@ -113,8 +113,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Fetch posts from the community')
     parser.add_argument('--write-output', '-w', action='store_true',
                        help='Write results to output file for testing')
-    parser.add_argument('--output-file', '-o', default='top_posters_output.json',
-                       help='Output file path (default: top_posters_output.json)')
+    parser.add_argument('--output-file', '-o', default='current_data.json',
+                       help='Output file path (default: current_data.json)')
     parser.add_argument('--count', '-c', type=int, default=100,
                        help='Number of messages to fetch (default: 100)')
     args = parser.parse_args()

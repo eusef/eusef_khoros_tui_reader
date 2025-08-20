@@ -54,7 +54,7 @@ def calculate_age(post_time_str: str) -> str:
         return "unknown"
 
 
-def load_messages_from_json(json_file_path: str = "top_posters_output.json") -> list:
+def load_messages_from_json(json_file_path: str = "current_data.json") -> list:
     """Load and process messages from a JSON file"""
     try:
         with open(json_file_path, 'r') as f:
