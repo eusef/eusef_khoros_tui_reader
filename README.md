@@ -1,71 +1,215 @@
 # Khoros TUI Reader
 
-A terminal-based user interface for reading Khoros forum messages using Textual.
+A modern terminal-based user interface for reading Khoros forum messages using Textual. This application provides a rich, keyboard-driven experience for browsing and interacting with Khoros community content directly from your terminal.
 
-## Installation
+## Features
 
-1. python -m venv .venv && pip install -r requirements.txt
+- **📱 Modern TUI Interface**: Built with Textual for a responsive, modern terminal experience
+- **🔐 Secure Authentication**: Integrated with 1Password CLI for secure credential management
+- **📨 Message Browsing**: Browse forum messages with subject, author, and timestamp information
+- **🔍 Smart Filtering**: Real-time message filtering and search capabilities
+- **📖 Message Viewer**: Full message content display with HTML-to-text conversion
+- **🤖 AI Summarization**: Powered by Google Gemini API for intelligent message summaries
+- **⚡ Performance**: Asynchronous message loading and efficient data handling
+- **🛠️ Debug Tools**: Built-in debugging and connection testing utilities
 
-## Gemini AI Integration
+## Prerequisites
 
-This application includes AI-powered message summarization using Google's Gemini API. To use this feature:
+- Python 3.8+
+- 1Password CLI (`op`) installed and authenticated
+- Access to a Khoros community
+- Google Gemini API key (optional, for AI summarization)
 
-1. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Set the environment variable: `export GEMINI_API_KEY=your_api_key_here`
-3. Press `s` while viewing a message to generate an AI summary
+## Getting Started
 
-**Note:** The Gemini API requires an internet connection and may have usage limits based on your Google Cloud account.
-
-### Testing Gemini Integration
-
-Before running the main application, you can test your Gemini API setup:
+### 1. Clone and Setup
 
 ```bash
-python test_gemini.py
+git clone <repository-url>
+cd khoros_tui_reader
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-This will verify your API key and test the connection to ensure everything is working correctly.
+### 2. Configure Environment
 
-## Components
+Configure the `.env.template` file with your Khoros community credentials:
 
-### MessageList (`message_list.py`)
-
-A reusable Textual widget for displaying lists of messages. This component has been refactored into its own module for reusability.
-
-**Features:**
-- Displays messages with subject and age
-- Handles message selection events
-- Supports loading messages from JSON files
-- Dynamic message updates
-- Responsive layout with proper text truncation
-
-**Usage:**
-```python
-from message_list import MessageList, MessageSelected, load_messages_from_json
-
-# Create a message list with pre-loaded messages
-messages = load_messages_from_json("messages.json")
-message_list = MessageList(messages, id="message-list")
-
-# Or create empty and load later
-message_list = MessageList(id="message-list")
-message_list.load_messages_from_file("messages.json")
-
-# Update messages dynamically
-message_list.update_messages(new_messages)
+```bash
+hostname=your-community.khoros.com
+username=op://path/to/1password/username
+password=op://path/to/1password/password
+sessionStartTime=
+sessionLastUsed=
+sessionKey=
+tapestry=t5
+GEMINI_API_KEY=op://path/to/1password/gemini-api-key
 ```
 
-## To run using 1Password CLI
+**Note**: The `sessionStartTime`, `sessionLastUsed`, and `sessionKey` fields are managed automatically by the application.
 
-If you just want to run individually
-	env $(op inject -i ./.env.template | xargs) python ./auth.py
+### 3. Set Up 1Password Integration
 
-To generate the post data for the viewer
-	env $(op inject -i ./.env.template | xargs) python ./fetch_posts.py --write-output --output-file ./current_data.json
+1. Install 1Password CLI: https://1password.com/downloads/command-line/
+2. Authenticate with your 1Password account: `op signin`
+3. Store your Khoros credentials and Gemini API key in 1Password
+4. Update the `.env.template` file with the correct 1Password references
 
-To run the viewer
-	python ./app.py
+### 4. Run the Application
 
-## Examples
+#### Option A: Use the Start Script (Recommended)
+```bash
+# Fetch 100 messages and start the TUI
+./start.sh
 
-See `example_usage.py` for a demonstration of how to reuse the MessageList component in different applications.
+# Or specify a custom message count
+./start.sh 50
+```
+
+#### Option B: Run Components Individually
+```bash
+# Test authentication
+env $(op inject -i ./.env.template | xargs) python ./auth.py
+
+# Fetch messages and save to file
+env $(op inject -i ./.env.template | xargs) python ./fetch_posts.py --write-output --output-file ./current_data.json
+
+# Start the TUI viewer
+python ./app.py
+```
+
+## Usage
+
+### Navigation
+- **↑/↓**: Navigate through message list
+- **Enter**: Open selected message in browser
+- **q**: Quit the application
+
+### Filtering and Search
+- **/**: Enter filter mode to search messages
+- **ESC**: Cancel filter mode or dismiss summary
+
+### AI Features
+- **s**: Generate AI summary of current message (requires Gemini API key)
+- **t**: Test Gemini API connection
+
+### Debug and Utilities
+- **d**: Toggle debug window
+- **ESC**: Dismiss dialogs and summaries
+
+## Configuration
+
+### Message Count
+Control how many messages to fetch by modifying the `start.sh` script or passing arguments to `fetch_posts.py`:
+
+```bash
+python ./fetch_posts.py --write-output --output-file ./current_data.json --count 200
+```
+
+### Gemini AI Integration
+To enable AI-powered message summarization:
+
+1. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Store it securely in 1Password
+3. Update your `.env.template` file
+4. Press `s` while viewing a message to generate summaries
+
+**Note**: The Gemini API requires an internet connection and may have usage limits based on your Google Cloud account.
+
+## Architecture
+
+### Core Components
+
+- **`app.py`**: Main application entry point and UI orchestration
+- **`auth.py`**: Khoros authentication and session management
+- **`fetch_posts.py`**: GraphQL-based message retrieval from Khoros
+- **`message_list.py`**: Reusable message list widget with filtering
+- **`message_viewer.py`**: Message content display with HTML conversion
+- **`gemini_summarizer.py`**: AI integration for message summarization
+- **`keyboard_commands.py`**: Dynamic keyboard shortcut display
+- **`loading_screen.py`**: Asynchronous loading interface
+- **`debug_widget.py`**: Development and debugging utilities
+
+### Data Flow
+
+1. **Authentication**: Secure credential retrieval via 1Password CLI
+2. **Data Fetching**: GraphQL queries to Khoros community API
+3. **Processing**: HTML-to-text conversion and data formatting
+4. **Display**: Rich TUI rendering with Textual framework
+5. **Interaction**: Keyboard-driven navigation and AI features
+
+## Development
+
+### Project Structure
+```
+khoros_tui_reader/
+├── app.py                 # Main application
+├── auth.py               # Authentication module
+├── fetch_posts.py        # Data fetching
+├── message_list.py       # Message list widget
+├── message_viewer.py     # Message display widget
+├── gemini_summarizer.py  # AI integration
+├── keyboard_commands.py  # UI controls
+├── loading_screen.py     # Loading interface
+├── debug_widget.py       # Debug utilities
+├── summary_widget.py     # AI summary display
+├── style.css             # TUI styling
+├── start.sh              # Convenience script
+├── requirements.txt      # Python dependencies
+└── .env.template         # Environment configuration
+```
+
+### Adding New Features
+The modular architecture makes it easy to extend functionality:
+
+- **New Widgets**: Create custom Textual widgets in separate modules
+- **API Integration**: Add new data sources in dedicated modules
+- **UI Enhancements**: Modify `style.css` for visual improvements
+- **Keyboard Shortcuts**: Extend `keyboard_commands.py` for new interactions
+
+## Troubleshooting
+
+### Common Issues
+
+**Authentication Errors**
+- Verify 1Password CLI is authenticated: `op whoami`
+- Check credential paths in `.env.template`
+- Ensure your Khoros community credentials are correct
+
+**No Messages Displayed**
+- Check if `current_data.json` exists and contains data
+- Verify network connectivity to your Khoros community
+- Check authentication token validity
+
+**Gemini API Issues**
+- Verify API key is correctly stored in 1Password
+- Check internet connectivity
+- Test connection with `t` key in the application
+
+**Performance Issues**
+- Reduce message count in `start.sh` or fetch command
+- Check network latency to Khoros community
+- Monitor system resources during operation
+
+### Debug Mode
+Enable debug mode with the `d` key to see detailed application state and error information.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+[Add your license information here]
+
+## Support
+
+For issues and questions:
+- Check the troubleshooting section above
+- Review the debug output (press `d` in the application)
+- Open an issue on the repository
