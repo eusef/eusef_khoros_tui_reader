@@ -1,6 +1,5 @@
 import requests
 import json
-import time
 from datetime import datetime
 from auth import get_auth_token, get_hostname
 

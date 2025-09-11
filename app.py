@@ -1,15 +1,13 @@
 import subprocess
 import asyncio
 from textual.app import App, ComposeResult
-from textual.containers import Container, Vertical
-from textual.widgets import Static, Input
+from textual.containers import Container
+from textual.widgets import Input
 from textual.reactive import reactive
 from textual import log
 from textual import on
 from textual.events import Key
 from textual.binding import Binding
-from textual.widget import Widget
-from textual.timer import Timer
 from message_list import MessageList, MessageSelected, load_messages_from_json
 from message_viewer import MessageViewer
 from keyboard_commands import KeyboardCommands
