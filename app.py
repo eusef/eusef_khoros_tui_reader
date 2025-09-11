@@ -17,6 +17,7 @@ from gemini_summarizer import GeminiSummarizer
 from summary_widget import SummaryWidget
 
 from fetch_bluesky import fetch_bluesky_posts
+from fetch_mastodon import fetch_mastodon_posts
  
  # Load messages from JSON file
 MESSAGES = []
@@ -123,9 +124,41 @@ class EmailApp(App):
         except Exception as e:
             log.warning(f"Failed to fetch BlueSky messages: {e}")
 
-        combined_messages = khoros_messages + bluesky_messages
+        # Try to fetch Mastodon posts, but don't fail if it doesn't work
+        mastodon_messages = []
+        try:
+            mastodon_posts = fetch_mastodon_posts()
+            if mastodon_posts:  # Only process if we got posts
+                for post in mastodon_posts:
+                    # Extract text content, handling HTML
+                    raw_content = post.get('content', 'No content')
+                    # Simple HTML tag removal for display
+                    import re
+                    clean_content = re.sub(r'<[^>]+>', '', raw_content)
+                    clean_subject = ' '.join(clean_content.split())  # Remove newlines for list display
+                    
+                    mastodon_messages.append({
+                        "subject": clean_subject,  # Clean text for list display
+                        "body": clean_content,     # Clean HTML for message viewer
+                        "id": post['id'],
+                        "postTime": post['created_at'],
+                        "viewHref": post['url'] if post.get('url') else f"{post.get('uri', '')}",
+                        "author": {
+                            "title": post['account'].get('display_name', ''),
+                            "lastName": "",
+                            "firstName": post['account']['username'],
+                        },
+                        "source": "mastodon"
+                    })
+                log.info(f"Loaded {len(mastodon_messages)} Mastodon messages")
+            else:
+                log.warning("No Mastodon messages retrieved (API may be restricted or no results)")
+        except Exception as e:
+            log.warning(f"Failed to fetch Mastodon messages: {e}")
+
+        combined_messages = khoros_messages + bluesky_messages + mastodon_messages
         combined_messages.sort(key=lambda x: x['postTime'], reverse=True)
-        log.info(f"Total messages loaded: {len(combined_messages)} ({len(khoros_messages)} Khoros, {len(bluesky_messages)} BlueSky)")
+        log.info(f"Total messages loaded: {len(combined_messages)} ({len(khoros_messages)} Khoros, {len(bluesky_messages)} BlueSky, {len(mastodon_messages)} Mastodon)")
         return combined_messages
 
     async def load_messages_async(self) -> None:

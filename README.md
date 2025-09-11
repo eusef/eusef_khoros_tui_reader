@@ -1,6 +1,6 @@
 # Khoros TUI Reader
 
-A modern terminal-based user interface for reading Khoros forum messages and BlueSky posts using Textual. This application provides a rich, keyboard-driven experience for browsing and interacting with Khoros community content and BlueSky social media posts directly from your terminal.
+A modern terminal-based user interface for reading Khoros forum messages, BlueSky posts, and Mastodon posts using Textual. This application provides a rich, keyboard-driven experience for browsing and interacting with Khoros community content and social media posts from BlueSky and Mastodon directly from your terminal.
 
 ## Features
 
@@ -8,6 +8,7 @@ A modern terminal-based user interface for reading Khoros forum messages and Blu
 - **🔐 Secure Authentication**: Integrated with 1Password CLI for secure credential management
 - **📨 Message Browsing**: Browse forum messages with subject, author, and timestamp information
 - **🦋 BlueSky Integration**: Fetch and display BlueSky posts alongside Khoros messages
+- **🐘 Mastodon Integration**: Fetch and display Mastodon posts from any instance
 - **🔍 Smart Filtering**: Real-time message filtering and search capabilities
 - **📖 Message Viewer**: Full message content display with HTML-to-text conversion
 - **🤖 AI Summarization**: Powered by Google Gemini API for intelligent message summaries
@@ -20,6 +21,7 @@ A modern terminal-based user interface for reading Khoros forum messages and Blu
 - 1Password CLI (`op`) installed and authenticated
 - Access to a Khoros community
 - BlueSky account with App Password (optional, for BlueSky integration)
+- Mastodon account with Access Token (optional, for Mastodon integration)
 - Google Gemini API key (optional, for AI summarization)
 
 ## Getting Started
@@ -36,7 +38,7 @@ pip install -r requirements.txt
 
 ### 2. Configure Environment
 
-Configure the `.env.template` file with your Khoros community and BlueSky credentials:
+Configure the `.env.template` file with your Khoros community, BlueSky, and Mastodon credentials:
 
 ```bash
 hostname=your-community.khoros.com
@@ -48,6 +50,8 @@ sessionKey=
 tapestry=t5
 BLUESKY_HANDLE=op://path/to/1password/bluesky-handle
 BLUESKY_APP_PASSWORD=op://path/to/1password/bluesky-app-password
+MASTODON_SERVER=op://path/to/1password/mastodon-server
+MASTODON_ACCESS_TOKEN=op://path/to/1password/mastodon-access-token
 GEMINI_API_KEY=op://path/to/1password/gemini-api-key
 ```
 
@@ -57,7 +61,7 @@ GEMINI_API_KEY=op://path/to/1password/gemini-api-key
 
 1. Install 1Password CLI: https://1password.com/downloads/command-line/
 2. Authenticate with your 1Password account: `op signin`
-3. Store your Khoros credentials, BlueSky credentials, and Gemini API key in 1Password
+3. Store your Khoros credentials, BlueSky credentials, Mastodon credentials, and Gemini API key in 1Password
 4. Update the `.env.template` file with the correct 1Password references
 
 ### 4. Run the Application
@@ -147,6 +151,48 @@ Run the application with `./start.sh` and you should see:
 - If BlueSky authentication fails, only Khoros messages will be displayed
 - BlueSky posts are automatically cleaned of newlines for better list display
 
+### Mastodon Integration
+To enable Mastodon posts alongside your Khoros and BlueSky messages:
+
+#### 1. Create a Mastodon Access Token
+1. Log into your Mastodon instance (e.g., [mastodon.social](https://mastodon.social), [fosstodon.org](https://fosstodon.org), etc.)
+2. Go to **Preferences** → **Development** → **Your applications**
+3. Click **New application**
+4. Fill in the application details:
+   - **Application name**: "Khoros TUI Reader" (or any name you prefer)
+   - **Application website**: Leave blank or add your repository URL
+   - **Scopes**: Select **read** (you only need read access for searching posts)
+5. Click **Submit**
+6. Click on your newly created application
+7. **Important**: Copy the **Access token** - you won't be able to see it again!
+
+#### 2. Store Credentials in 1Password
+1. Create a new item in 1Password for your Mastodon credentials
+2. Store your Mastodon server URL (e.g., `mastodon.social`, `fosstodon.org`)
+3. Store the access token you just created
+4. Note the 1Password reference paths for both items
+
+#### 3. Update Environment Configuration
+Add the Mastodon credentials to your `.env.template` file:
+```bash
+MASTODON_SERVER=op://path/to/1password/mastodon-server
+MASTODON_ACCESS_TOKEN=op://path/to/1password/mastodon-access-token
+```
+
+#### 4. Test the Integration
+Run the application with `./start.sh` and you should see:
+- 🏢 **Khoros messages** (displayed in white text)
+- 🦋 **BlueSky posts** (displayed in cyan text)  
+- 🐘 **Mastodon posts** (displayed in magenta text)
+- 📅 **Combined timeline** sorted by date
+
+**Notes**: 
+- Mastodon integration is optional - the app works fine without it
+- The app uses the [Mastodon v2 search API](https://docs.joinmastodon.org/methods/search/) for public post searching
+- You can use any Mastodon instance - just update the server URL
+- If Mastodon authentication fails, other message sources will still work
+- HTML content is automatically cleaned for better display
+
 ### Gemini AI Integration
 To enable AI-powered message summarization:
 
@@ -165,6 +211,7 @@ To enable AI-powered message summarization:
 - **`auth.py`**: Khoros authentication and session management
 - **`fetch_posts.py`**: GraphQL-based message retrieval from Khoros
 - **`fetch_bluesky.py`**: BlueSky API integration and post retrieval
+- **`fetch_mastodon.py`**: Mastodon API integration and post retrieval
 - **`message_list.py`**: Reusable message list widget with filtering
 - **`message_viewer.py`**: Message content display with HTML conversion
 - **`gemini_summarizer.py`**: AI integration for message summarization
@@ -174,8 +221,8 @@ To enable AI-powered message summarization:
 
 ### Data Flow
 
-1. **Authentication**: Secure credential retrieval via 1Password CLI (Khoros + BlueSky)
-2. **Data Fetching**: GraphQL queries to Khoros community API + REST API calls to BlueSky
+1. **Authentication**: Secure credential retrieval via 1Password CLI (Khoros + BlueSky + Mastodon)
+2. **Data Fetching**: GraphQL queries to Khoros community API + REST API calls to BlueSky and Mastodon
 3. **Processing**: HTML-to-text conversion, data formatting, and message normalization
 4. **Display**: Rich TUI rendering with Textual framework and color-coded sources
 5. **Interaction**: Keyboard-driven navigation and AI features
@@ -189,6 +236,7 @@ khoros_tui_reader/
 ├── auth.py               # Authentication module
 ├── fetch_posts.py        # Khoros data fetching
 ├── fetch_bluesky.py      # BlueSky data fetching
+├── fetch_mastodon.py     # Mastodon data fetching
 ├── message_list.py       # Message list widget
 ├── message_viewer.py     # Message display widget
 ├── gemini_summarizer.py  # AI integration
@@ -235,6 +283,14 @@ The modular architecture makes it easy to extend functionality:
 - Ensure your BlueSky account is active and not suspended
 - Test authentication by running: `env $(op inject -i ./.env.template | xargs) python -c "from fetch_bluesky import create_bluesky_session; print('Token:', create_bluesky_session() is not None)"`
 - If BlueSky fails, the app will continue with only Khoros messages
+
+**Mastodon Integration Issues**
+- Verify Mastodon server URL and access token are correctly stored in 1Password
+- Check that your Mastodon access token hasn't been revoked
+- Ensure your Mastodon server is accessible and not experiencing downtime
+- Test authentication by running: `env $(op inject -i ./.env.template | xargs) python -c "from fetch_mastodon import create_mastodon_session; server, token = create_mastodon_session(); print('Configured:', server is not None and token is not None)"`
+- Verify your access token has 'read' scope permissions
+- If Mastodon fails, the app will continue with other message sources
 
 **Performance Issues**
 - Reduce message count in `start.sh` or fetch command

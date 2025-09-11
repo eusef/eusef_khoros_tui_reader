@@ -131,6 +131,8 @@ class MessageItem(Static):
         color = "white"
         if self.source == "bluesky":
             color = "cyan"
+        elif self.source == "mastodon":
+            color = "magenta"
 
         return f"[{color}]{display_subject} ({self.age})[/{color}]"
 
