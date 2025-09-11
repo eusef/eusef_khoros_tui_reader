@@ -119,10 +119,19 @@ class MessageItem(Static):
         super().__init__()
     
     def render(self) -> str:
+        # Get service icon
+        icons = {
+            "khoros": "🏢",
+            "bluesky": "🦋", 
+            "mastodon": "🐘"
+        }
+        icon = icons.get(self.source, "❓")
+        
         # Calculate available width and format the display
         width = self.size.width if self.size else 80
         age_width = len(self.age) + 2  # +2 for parentheses
-        subject_width = width - age_width - 1  # -1 for space
+        icon_width = 2  # Icon takes about 2 character widths
+        subject_width = width - age_width - icon_width - 2  # -2 for spaces around icon
         
         # Truncate subject if needed
         display_subject = self.subject[:subject_width-3] + "..." if len(self.subject) > subject_width else self.subject
@@ -134,7 +143,7 @@ class MessageItem(Static):
         elif self.source == "mastodon":
             color = "magenta"
 
-        return f"[{color}]{display_subject} ({self.age})[/{color}]"
+        return f"[{color}]{icon} {display_subject} ({self.age})[/{color}]"
 
 
 class MessageList(ListView):

@@ -8,7 +8,7 @@ from textual import log
 from textual import on
 from textual.events import Key
 from textual.binding import Binding
-from message_list import MessageList, MessageSelected, load_messages_from_json
+from message_list import MessageList, MessageSelected, load_messages_from_json, calculate_age
 from message_viewer import MessageViewer
 from keyboard_commands import KeyboardCommands
 from loading_screen import LoadingScreen
@@ -116,7 +116,8 @@ class EmailApp(App):
                             "lastName": "",
                             "firstName": post['author']['handle'],
                         },
-                        "source": "bluesky"
+                        "source": "bluesky",
+                        "age": calculate_age(created_at)
                     })
                 log.info(f"Loaded {len(bluesky_messages)} BlueSky messages")
             else:
@@ -148,7 +149,8 @@ class EmailApp(App):
                             "lastName": "",
                             "firstName": post['account']['username'],
                         },
-                        "source": "mastodon"
+                        "source": "mastodon",
+                        "age": calculate_age(post['created_at'])
                     })
                 log.info(f"Loaded {len(mastodon_messages)} Mastodon messages")
             else:
@@ -157,7 +159,31 @@ class EmailApp(App):
             log.warning(f"Failed to fetch Mastodon messages: {e}")
 
         combined_messages = khoros_messages + bluesky_messages + mastodon_messages
-        combined_messages.sort(key=lambda x: x['postTime'], reverse=True)
+        
+        # Sort by actual datetime, not string - need to parse timestamps properly
+        def parse_timestamp(timestamp_str):
+            """Parse various timestamp formats to datetime for proper sorting"""
+            from datetime import datetime, timezone
+            try:
+                # Handle different timestamp formats
+                if '.' in timestamp_str and timestamp_str.endswith('Z'):
+                    # BlueSky format: 2024-07-15T18:30:00.123Z
+                    return datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+                elif timestamp_str.endswith('Z'):
+                    # Some formats without microseconds: 2024-07-15T18:30:00Z
+                    return datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                elif '+' in timestamp_str or timestamp_str.endswith(('-07:00', '-08:00', '+00:00')):
+                    # Khoros/Mastodon format with timezone: 2024-07-15T18:30:00.123-07:00
+                    return datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                else:
+                    # Fallback: try to parse as ISO format
+                    return datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            except Exception as e:
+                log.warning(f"Failed to parse timestamp '{timestamp_str}': {e}")
+                # Return epoch time as fallback so message doesn't break sorting
+                return datetime(1970, 1, 1, tzinfo=timezone.utc)
+        
+        combined_messages.sort(key=lambda x: parse_timestamp(x['postTime']), reverse=True)
         log.info(f"Total messages loaded: {len(combined_messages)} ({len(khoros_messages)} Khoros, {len(bluesky_messages)} BlueSky, {len(mastodon_messages)} Mastodon)")
         return combined_messages
 
