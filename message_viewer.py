@@ -70,18 +70,22 @@ class MessageViewer(Static):
         Returns:
             Formatted string for display
         """
+        author_title = message_data.get("author", {}).get("title", "N/A") or "N/A"
+        author_first_name = message_data.get("author", {}).get("firstName", "N/A") or "N/A"
+        author_last_name = message_data.get("author", {}).get("lastName", "N/A") or "N/A"
+
         return f"""
 [bold blue]Message Details[/bold blue]
 
-[bold]ID:[/bold] {message_data["id"]}
-[bold]Subject:[/bold] {message_data["subject"]}
-[bold]Post Time:[/bold] {message_data["postTime"]}
-[bold]View URL:[/bold] {message_data["viewHref"]}
+[bold]ID:[/bold] {message_data.get("id", "N/A")}
+[bold]Subject:[/bold] {message_data.get("subject", "N/A")}
+[bold]Post Time:[/bold] {message_data.get("postTime", "N/A")}
+[bold]View URL:[/bold] {message_data.get("viewHref", "N/A")}
 
 [bold]Author:[/bold]
-  Title: {message_data["author"]["title"] or "N/A"}
-  First Name: {message_data["author"]["firstName"] or "N/A"}
-  Last Name: {message_data["author"]["lastName"] or "N/A"}
+  Title: {author_title}
+  First Name: {author_first_name}
+  Last Name: {author_last_name}
 
 [bold blue]Message Body:[/bold blue]
 {plain_text_body}

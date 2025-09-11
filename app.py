@@ -16,8 +16,10 @@ from debug_widget import DebugWidget
 from gemini_summarizer import GeminiSummarizer
 from summary_widget import SummaryWidget
 
-# Load messages from JSON file
-MESSAGES = load_messages_from_json("current_data.json")
+from fetch_bluesky import fetch_bluesky_posts
+ 
+ # Load messages from JSON file
+MESSAGES = []
 
 class FilterInput(Input):
     """A filter input widget that can be shown/hidden"""
@@ -83,33 +85,58 @@ class EmailApp(App):
         # Store reference to message list for later use
         self.message_list = self.query_one("#message-list", MessageList)
     
+    async def load_all_messages(self):
+        khoros_messages = load_messages_from_json("current_data.json")
+        for msg in khoros_messages:
+            msg['source'] = 'khoros'
+
+        # Try to fetch BlueSky posts, but don't fail if it doesn't work
+        bluesky_messages = []
+        try:
+            bluesky_posts = fetch_bluesky_posts()
+            if bluesky_posts:  # Only process if we got posts
+                for post in bluesky_posts:
+                    # Extract text and date from the record field
+                    record = post.get('record', {})
+                    post_text = record.get('text', 'No content')
+                    created_at = record.get('createdAt', post.get('indexedAt', ''))
+                    
+                    bluesky_messages.append({
+                        "subject": post_text,
+                        "body": post_text,
+                        "id": post['uri'],
+                        "postTime": created_at,
+                        "viewHref": f"https://bsky.app/profile/{post['author']['handle']}/post/{post['uri'].split('/')[-1]}",
+                        "author": {
+                            "title": post['author'].get('displayName', ''),
+                            "lastName": "",
+                            "firstName": post['author']['handle'],
+                        },
+                        "source": "bluesky"
+                    })
+                log.info(f"Loaded {len(bluesky_messages)} BlueSky messages")
+            else:
+                log.warning("No BlueSky messages retrieved (API may be restricted)")
+        except Exception as e:
+            log.warning(f"Failed to fetch BlueSky messages: {e}")
+
+        combined_messages = khoros_messages + bluesky_messages
+        combined_messages.sort(key=lambda x: x['postTime'], reverse=True)
+        log.info(f"Total messages loaded: {len(combined_messages)} ({len(khoros_messages)} Khoros, {len(bluesky_messages)} BlueSky)")
+        return combined_messages
+
     async def load_messages_async(self) -> None:
         """Load messages asynchronously and transition to main interface when complete"""
         try:
-            # Check if the JSON file exists and has content
-            import os
-            json_file = "current_data.json"
-            
-            # Update loading message to show we're checking the file
             loading_screen = self.query_one("#loading-screen", LoadingScreen)
             loading_screen.update("⠋ Checking message data...")
-            
-            if not os.path.exists(json_file):
-                self.handle_loading_error(f"JSON file '{json_file}' not found")
-                return
-            
-            # Check file size to ensure it has content
-            file_size = os.path.getsize(json_file)
-            if file_size == 0:
-                self.handle_loading_error(f"JSON file '{json_file}' is empty")
-                return
-            
-            # Update loading message to show we're processing
-            loading_screen.update("⠙ Processing messages...")
-            
+
+            global MESSAGES
+            MESSAGES = await self.load_all_messages()
+
             # Small delay to show loading animation (can be adjusted)
             await asyncio.sleep(0.3)
-            
+
             # Check if messages loaded successfully
             if MESSAGES:
                 # Transition to main interface
@@ -180,13 +207,14 @@ class EmailApp(App):
         
         # Initialize the app as before
         if MESSAGES:
-            # Get the message list widget
+            # Get the message list widget and update it with loaded messages
             message_list = self.query_one("#message-list", MessageList)
-            # Select the first item (index 0)
-            message_list.index = 0
-            # Give focus to the message list
+            message_list.update_messages(MESSAGES)
+            # Give focus to the message list first
             message_list.focus()
-            # The MessageSelected event will be handled automatically by the event handler
+            # Then select the first item (index 0) - this will trigger MessageSelected event
+            if len(MESSAGES) > 0:
+                message_list.index = 0
         
         self.loading_complete = True
 
