@@ -98,12 +98,15 @@ class EmailApp(App):
                 for post in bluesky_posts:
                     # Extract text and date from the record field
                     record = post.get('record', {})
-                    post_text = record.get('text', 'No content')
+                    raw_text = record.get('text', 'No content')
+                    
+                    # Clean up text for list display: remove newlines and extra whitespace
+                    clean_text = ' '.join(raw_text.split())  # This removes all newlines and normalizes whitespace
                     created_at = record.get('createdAt', post.get('indexedAt', ''))
                     
                     bluesky_messages.append({
-                        "subject": post_text,
-                        "body": post_text,
+                        "subject": clean_text,  # Clean text for list display
+                        "body": raw_text,       # Keep original formatting for message viewer
                         "id": post['uri'],
                         "postTime": created_at,
                         "viewHref": f"https://bsky.app/profile/{post['author']['handle']}/post/{post['uri'].split('/')[-1]}",
