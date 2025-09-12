@@ -310,7 +310,7 @@ Enable debug mode with the `d` key to see detailed application state and error i
 
 ## License
 
-[Add your license information here]
+See LICENSE
 
 ## Support
 
