@@ -20,7 +20,7 @@ class GeminiSummarizer:
             
         try:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
             log.info("Gemini API client initialized successfully")
         except Exception as e:
             log.error(f"Failed to initialize Gemini API: {e}")
