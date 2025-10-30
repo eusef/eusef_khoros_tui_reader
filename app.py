@@ -128,35 +128,57 @@ class EmailApp(App):
         # Try to fetch Mastodon posts, but don't fail if it doesn't work
         mastodon_messages = []
         try:
+            log.info("Fetching Mastodon posts...")
             mastodon_posts = fetch_mastodon_posts()
+            log.info(f"Mastodon fetch returned {len(mastodon_posts) if mastodon_posts else 0} posts")
             if mastodon_posts:  # Only process if we got posts
-                for post in mastodon_posts:
-                    # Extract text content, handling HTML
-                    raw_content = post.get('content', 'No content')
-                    # Simple HTML tag removal for display
-                    import re
-                    clean_content = re.sub(r'<[^>]+>', '', raw_content)
-                    clean_subject = ' '.join(clean_content.split())  # Remove newlines for list display
-                    
-                    mastodon_messages.append({
-                        "subject": clean_subject,  # Clean text for list display
-                        "body": clean_content,     # Clean HTML for message viewer
-                        "id": post['id'],
-                        "postTime": post['created_at'],
-                        "viewHref": post['url'] if post.get('url') else f"{post.get('uri', '')}",
-                        "author": {
-                            "title": post['account'].get('display_name', ''),
-                            "lastName": "",
-                            "firstName": post['account']['username'],
-                        },
-                        "source": "mastodon",
-                        "age": calculate_age(post['created_at'])
-                    })
+                for i, post in enumerate(mastodon_posts):
+                    try:
+                        # Extract text content, handling HTML
+                        raw_content = post.get('content', 'No content')
+                        # Simple HTML tag removal for display
+                        import re
+                        clean_content = re.sub(r'<[^>]+>', '', raw_content)
+                        clean_subject = ' '.join(clean_content.split())  # Remove newlines for list display
+                        
+                        # Validate required fields
+                        if not post.get('id'):
+                            log.warning(f"Mastodon post {i} missing 'id', skipping")
+                            continue
+                        if not post.get('created_at'):
+                            log.warning(f"Mastodon post {i} missing 'created_at', skipping")
+                            continue
+                        if 'account' not in post:
+                            log.warning(f"Mastodon post {i} missing 'account', skipping")
+                            continue
+                        
+                        mastodon_messages.append({
+                            "subject": clean_subject,  # Clean text for list display
+                            "body": clean_content,     # Clean HTML for message viewer
+                            "id": post['id'],
+                            "postTime": post['created_at'],
+                            "viewHref": post['url'] if post.get('url') else f"{post.get('uri', '')}",
+                            "author": {
+                                "title": post['account'].get('display_name', ''),
+                                "lastName": "",
+                                "firstName": post['account']['username'],
+                            },
+                            "source": "mastodon",
+                            "age": calculate_age(post['created_at'])
+                        })
+                        log.debug(f"Successfully processed Mastodon post {i}: {clean_subject[:50]}...")
+                    except Exception as post_error:
+                        log.error(f"Error processing Mastodon post {i}: {post_error}")
+                        import traceback
+                        log.debug(traceback.format_exc())
+                        continue
                 log.info(f"Loaded {len(mastodon_messages)} Mastodon messages")
             else:
                 log.warning("No Mastodon messages retrieved (API may be restricted or no results)")
         except Exception as e:
             log.warning(f"Failed to fetch Mastodon messages: {e}")
+            import traceback
+            log.debug(traceback.format_exc())
 
         combined_messages = khoros_messages + bluesky_messages + mastodon_messages
         

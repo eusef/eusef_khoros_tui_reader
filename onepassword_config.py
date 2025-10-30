@@ -131,6 +131,14 @@ async def _get_secret_from_1password_async(ref: str) -> Optional[str]:
                         "user": ["username", "email", "login", "credential"],
                         "pass": ["password", "credential"],
                         "pwd": ["password", "credential"],
+                        "password": ["credential", "pass", "pwd"],
+                        "app-password": ["password", "credential", "app password", "app_password"],
+                        "app_password": ["password", "credential", "app-password", "app password"],
+                        "app password": ["password", "credential", "app-password", "app_password"],
+                        "token": ["credential", "access token", "access_token", "password"],
+                        "access-token": ["token", "credential", "access_token", "access token"],
+                        "access_token": ["token", "credential", "access-token", "access token"],
+                        "access token": ["token", "credential", "access_token", "access-token"],
                         "credential": ["username", "password", "email"],
                     }
                     

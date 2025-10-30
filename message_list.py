@@ -10,10 +10,18 @@ def calculate_age(post_time_str: str) -> str:
     try:
         # Handle different timestamp formats
         if '.' in post_time_str and post_time_str.endswith('Z'):
-            # Bluesky format: 2024-07-15T18:30:00.123Z
-            post_time = datetime.strptime(post_time_str, "%Y-%m-%dT%H:%M:%S.%f%z")
+            # BlueSky/Mastodon format with microseconds: 2024-07-15T18:30:00.123Z or 2025-10-29T23:46:32.000Z
+            try:
+                # Try parsing with microseconds
+                post_time = datetime.strptime(post_time_str, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+            except ValueError:
+                # Fallback: try parsing without microseconds parsing (use fromisoformat)
+                post_time = datetime.fromisoformat(post_time_str.replace('Z', '+00:00'))
+        elif post_time_str.endswith('Z'):
+            # Format without microseconds: 2024-07-15T18:30:00Z
+            post_time = datetime.fromisoformat(post_time_str.replace('Z', '+00:00'))
         else:
-            # Khoros format: 2024-07-15T18:30:00Z
+            # Khoros/Mastodon format with timezone offset: 2024-07-15T18:30:00.123-07:00
             post_time = datetime.fromisoformat(post_time_str.replace('Z', '+00:00'))
         
         now = datetime.now(timezone.utc)

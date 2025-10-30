@@ -8,9 +8,16 @@ def create_mastodon_session():
     mastodon_server = get_config_value("MASTODON_SERVER")
     mastodon_token = get_config_value("MASTODON_ACCESS_TOKEN")
     
-    if not mastodon_server or not mastodon_token:
+    if not mastodon_server:
         print("Mastodon credentials not found in configuration")
-        print("Please ensure MASTODON_SERVER and MASTODON_ACCESS_TOKEN are set in .env.template with valid 1Password references")
+        print("  MASTODON_SERVER is missing")
+        print("  Please ensure MASTODON_SERVER is set in .env.template with a valid 1Password reference")
+        return None, None
+    
+    if not mastodon_token:
+        print("Mastodon credentials not found in configuration")
+        print("  MASTODON_ACCESS_TOKEN is missing")
+        print("  Please ensure MASTODON_ACCESS_TOKEN is set in .env.template with a valid 1Password reference")
         return None, None
     
     # Ensure server URL has proper format

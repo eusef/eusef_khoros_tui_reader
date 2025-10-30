@@ -8,9 +8,16 @@ def create_bluesky_session():
     bluesky_handle = get_config_value("BLUESKY_HANDLE")
     bluesky_password = get_config_value("BLUESKY_APP_PASSWORD")
     
-    if not bluesky_handle or not bluesky_password:
+    if not bluesky_handle:
         print("BlueSky credentials not found in configuration")
-        print("Please ensure BLUESKY_HANDLE and BLUESKY_APP_PASSWORD are set in .env.template with valid 1Password references")
+        print("  BLUESKY_HANDLE is missing")
+        print("  Please ensure BLUESKY_HANDLE is set in .env.template with a valid 1Password reference")
+        return None
+    
+    if not bluesky_password:
+        print("BlueSky credentials not found in configuration")
+        print("  BLUESKY_APP_PASSWORD is missing")
+        print("  Please ensure BLUESKY_APP_PASSWORD is set in .env.template with a valid 1Password reference")
         return None
     
     try:
