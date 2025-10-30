@@ -86,101 +86,155 @@ class EmailApp(App):
         # Store reference to message list for later use
         self.message_list = self.query_one("#message-list", MessageList)
     
+    def load_bluesky_from_json(self, json_file_path: str = "bluesky_data.json") -> list:
+        """Load BlueSky posts from JSON file"""
+        bluesky_messages = []
+        if not os.path.exists(json_file_path):
+            print(f"⚠️  BlueSky data file not found: {json_file_path}")
+            return []
+        
+        try:
+            with open(json_file_path, 'r') as f:
+                bluesky_posts = json.load(f)
+            
+            if not bluesky_posts:
+                print(f"⚠️  BlueSky data file is empty")
+                return []
+            
+            print(f"→ Processing {len(bluesky_posts)} BlueSky posts from {json_file_path}...")
+            for post in bluesky_posts:
+                # Extract text and date from the record field
+                record = post.get('record', {})
+                raw_text = record.get('text', 'No content')
+                
+                # Clean up text for list display: remove newlines and extra whitespace
+                clean_text = ' '.join(raw_text.split())
+                created_at = record.get('createdAt', post.get('indexedAt', ''))
+                
+                bluesky_messages.append({
+                    "subject": clean_text,
+                    "body": raw_text,
+                    "id": post['uri'],
+                    "postTime": created_at,
+                    "viewHref": f"https://bsky.app/profile/{post['author']['handle']}/post/{post['uri'].split('/')[-1]}",
+                    "author": {
+                        "title": post['author'].get('displayName', ''),
+                        "lastName": "",
+                        "firstName": post['author']['handle'],
+                    },
+                    "source": "bluesky",
+                    "age": calculate_age(created_at)
+                })
+            print(f"✅ Processed {len(bluesky_messages)} BlueSky messages\n")
+            return bluesky_messages
+        except Exception as e:
+            print(f"❌ Error loading BlueSky data: {e}\n")
+            log.error(f"Error loading BlueSky data from {json_file_path}: {e}")
+            return []
+    
+    def load_mastodon_from_json(self, json_file_path: str = "mastodon_data.json") -> list:
+        """Load Mastodon posts from JSON file"""
+        mastodon_messages = []
+        if not os.path.exists(json_file_path):
+            print(f"⚠️  Mastodon data file not found: {json_file_path}")
+            return []
+        
+        try:
+            with open(json_file_path, 'r') as f:
+                mastodon_posts = json.load(f)
+            
+            if not mastodon_posts:
+                print(f"⚠️  Mastodon data file is empty")
+                return []
+            
+            print(f"→ Processing {len(mastodon_posts)} Mastodon posts from {json_file_path}...")
+            import re
+            for i, post in enumerate(mastodon_posts):
+                try:
+                    # Extract text content, handling HTML
+                    raw_content = post.get('content', 'No content')
+                    clean_content = re.sub(r'<[^>]+>', '', raw_content)
+                    clean_subject = ' '.join(clean_content.split())
+                    
+                    # Validate required fields
+                    if not post.get('id'):
+                        log.warning(f"Mastodon post {i} missing 'id', skipping")
+                        continue
+                    if not post.get('created_at'):
+                        log.warning(f"Mastodon post {i} missing 'created_at', skipping")
+                        continue
+                    if 'account' not in post:
+                        log.warning(f"Mastodon post {i} missing 'account', skipping")
+                        continue
+                    
+                    mastodon_messages.append({
+                        "subject": clean_subject,
+                        "body": clean_content,
+                        "id": post['id'],
+                        "postTime": post['created_at'],
+                        "viewHref": post['url'] if post.get('url') else f"{post.get('uri', '')}",
+                        "author": {
+                            "title": post['account'].get('display_name', ''),
+                            "lastName": "",
+                            "firstName": post['account']['username'],
+                        },
+                        "source": "mastodon",
+                        "age": calculate_age(post['created_at'])
+                    })
+                except Exception as post_error:
+                    print(f"  ⚠️  Error processing Mastodon post {i}: {post_error}")
+                    log.error(f"Error processing Mastodon post {i}: {post_error}")
+                    continue
+            
+            print(f"✅ Processed {len(mastodon_messages)} Mastodon messages\n")
+            return mastodon_messages
+        except Exception as e:
+            print(f"❌ Error loading Mastodon data: {e}\n")
+            log.error(f"Error loading Mastodon data from {json_file_path}: {e}")
+            return []
+
     async def load_all_messages(self):
+        print(f"\n{'='*60}")
+        print(f"📊 LOADING ALL MESSAGES - TUI MODE")
+        print(f"{'='*60}\n")
+        
+        print("[STEP 1] Loading Khoros messages from current_data.json...")
         khoros_messages = load_messages_from_json("current_data.json")
         for msg in khoros_messages:
             msg['source'] = 'khoros'
+        print(f"✅ Loaded {len(khoros_messages)} Khoros messages\n")
 
-        # Try to fetch BlueSky posts, but don't fail if it doesn't work
+        # Load BlueSky posts from JSON file (fetched by start.sh)
+        print("[STEP 2] Loading BlueSky posts from bluesky_data.json...")
         bluesky_messages = []
         try:
-            bluesky_posts = fetch_bluesky_posts()
-            if bluesky_posts:  # Only process if we got posts
-                for post in bluesky_posts:
-                    # Extract text and date from the record field
-                    record = post.get('record', {})
-                    raw_text = record.get('text', 'No content')
-                    
-                    # Clean up text for list display: remove newlines and extra whitespace
-                    clean_text = ' '.join(raw_text.split())  # This removes all newlines and normalizes whitespace
-                    created_at = record.get('createdAt', post.get('indexedAt', ''))
-                    
-                    bluesky_messages.append({
-                        "subject": clean_text,  # Clean text for list display
-                        "body": raw_text,       # Keep original formatting for message viewer
-                        "id": post['uri'],
-                        "postTime": created_at,
-                        "viewHref": f"https://bsky.app/profile/{post['author']['handle']}/post/{post['uri'].split('/')[-1]}",
-                        "author": {
-                            "title": post['author'].get('displayName', ''),
-                            "lastName": "",
-                            "firstName": post['author']['handle'],
-                        },
-                        "source": "bluesky",
-                        "age": calculate_age(created_at)
-                    })
-                log.info(f"Loaded {len(bluesky_messages)} BlueSky messages")
-            else:
-                log.warning("No BlueSky messages retrieved (API may be restricted)")
+            bluesky_messages = self.load_bluesky_from_json("bluesky_data.json")
+            if not bluesky_messages:
+                print(f"⚠️  No BlueSky messages loaded\n")
+            log.info(f"Loaded {len(bluesky_messages)} BlueSky messages")
         except Exception as e:
-            log.warning(f"Failed to fetch BlueSky messages: {e}")
+            print(f"❌ BlueSky loading failed: {e}\n")
+            log.warning(f"Failed to load BlueSky messages: {e}")
 
-        # Try to fetch Mastodon posts, but don't fail if it doesn't work
+        # Load Mastodon posts from JSON file (fetched by start.sh)
+        print("[STEP 3] Loading Mastodon posts from mastodon_data.json...")
         mastodon_messages = []
         try:
-            log.info("Fetching Mastodon posts...")
-            mastodon_posts = fetch_mastodon_posts()
-            log.info(f"Mastodon fetch returned {len(mastodon_posts) if mastodon_posts else 0} posts")
-            if mastodon_posts:  # Only process if we got posts
-                for i, post in enumerate(mastodon_posts):
-                    try:
-                        # Extract text content, handling HTML
-                        raw_content = post.get('content', 'No content')
-                        # Simple HTML tag removal for display
-                        import re
-                        clean_content = re.sub(r'<[^>]+>', '', raw_content)
-                        clean_subject = ' '.join(clean_content.split())  # Remove newlines for list display
-                        
-                        # Validate required fields
-                        if not post.get('id'):
-                            log.warning(f"Mastodon post {i} missing 'id', skipping")
-                            continue
-                        if not post.get('created_at'):
-                            log.warning(f"Mastodon post {i} missing 'created_at', skipping")
-                            continue
-                        if 'account' not in post:
-                            log.warning(f"Mastodon post {i} missing 'account', skipping")
-                            continue
-                        
-                        mastodon_messages.append({
-                            "subject": clean_subject,  # Clean text for list display
-                            "body": clean_content,     # Clean HTML for message viewer
-                            "id": post['id'],
-                            "postTime": post['created_at'],
-                            "viewHref": post['url'] if post.get('url') else f"{post.get('uri', '')}",
-                            "author": {
-                                "title": post['account'].get('display_name', ''),
-                                "lastName": "",
-                                "firstName": post['account']['username'],
-                            },
-                            "source": "mastodon",
-                            "age": calculate_age(post['created_at'])
-                        })
-                        log.debug(f"Successfully processed Mastodon post {i}: {clean_subject[:50]}...")
-                    except Exception as post_error:
-                        log.error(f"Error processing Mastodon post {i}: {post_error}")
-                        import traceback
-                        log.debug(traceback.format_exc())
-                        continue
-                log.info(f"Loaded {len(mastodon_messages)} Mastodon messages")
-            else:
-                log.warning("No Mastodon messages retrieved (API may be restricted or no results)")
+            mastodon_messages = self.load_mastodon_from_json("mastodon_data.json")
+            if not mastodon_messages:
+                print(f"⚠️  No Mastodon messages loaded\n")
+            log.info(f"Loaded {len(mastodon_messages)} Mastodon messages")
         except Exception as e:
-            log.warning(f"Failed to fetch Mastodon messages: {e}")
-            import traceback
-            log.debug(traceback.format_exc())
+            print(f"❌ Mastodon loading failed: {e}\n")
+            log.warning(f"Failed to load Mastodon messages: {e}")
 
+        print("[STEP 4] Combining and sorting messages...")
         combined_messages = khoros_messages + bluesky_messages + mastodon_messages
+        print(f"Combined totals before sorting:")
+        print(f"  • Khoros: {len(khoros_messages)}")
+        print(f"  • BlueSky: {len(bluesky_messages)}")
+        print(f"  • Mastodon: {len(mastodon_messages)}")
+        print(f"  • TOTAL: {len(combined_messages)}")
         
         # Sort by actual datetime, not string - need to parse timestamps properly
         def parse_timestamp(timestamp_str):
@@ -206,6 +260,20 @@ class EmailApp(App):
                 return datetime(1970, 1, 1, tzinfo=timezone.utc)
         
         combined_messages.sort(key=lambda x: parse_timestamp(x['postTime']), reverse=True)
+        
+        # Count by source after sorting
+        source_counts = {}
+        for msg in combined_messages:
+            source = msg.get('source', 'unknown')
+            source_counts[source] = source_counts.get(source, 0) + 1
+        
+        print(f"\n✅ Sorting complete. Final message counts by source:")
+        for source, count in sorted(source_counts.items()):
+            icon = {"khoros": "🏢", "bluesky": "🦋", "mastodon": "🐘"}.get(source, "❓")
+            print(f"  {icon} {source}: {count}")
+        print(f"  📊 TOTAL: {len(combined_messages)}")
+        print(f"{'='*60}\n")
+        
         log.info(f"Total messages loaded: {len(combined_messages)} ({len(khoros_messages)} Khoros, {len(bluesky_messages)} BlueSky, {len(mastodon_messages)} Mastodon)")
         return combined_messages
 

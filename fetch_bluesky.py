@@ -41,39 +41,60 @@ def create_bluesky_session():
         return None
 
 def fetch_bluesky_posts(search_term="1password", post_count=50):
+    print(f"\n{'='*60}")
+    print(f"🦋 BLUESKY FETCH DEBUG")
+    print(f"{'='*60}")
     print(f"Starting BlueSky fetch for '{search_term}' at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Requested post count: {post_count}")
 
     # Get authentication token
+    print("\n[1/3] Authenticating with BlueSky...")
     access_token = create_bluesky_session()
     if not access_token:
-        print("Failed to authenticate with BlueSky - skipping BlueSky posts")
+        print("❌ Failed to authenticate with BlueSky - skipping BlueSky posts")
+        print(f"{'='*60}\n")
         return []
+    print("✅ Authentication successful")
 
-    url = "https://bsky.social/xrpc/app.bsky.feed.searchPosts"  # Use authenticated endpoint
+    url = "https://bsky.social/xrpc/app.bsky.feed.searchPosts"
     params = {
         "q": search_term,
         "limit": post_count
     }
     
     headers = {
-        "Authorization": f"Bearer {access_token}",
+        "Authorization": f"Bearer {access_token[:20]}...",  # Truncate for security
         "Content-Type": "application/json"
     }
+    
+    print(f"\n[2/3] Fetching posts from BlueSky API...")
+    print(f"URL: {url}")
+    print(f"Search term: '{search_term}'")
+    print(f"Limit: {post_count}")
 
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=30)
+        response = requests.get(url, params=params, headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}, timeout=30)
+        print(f"Response status code: {response.status_code}")
         response.raise_for_status()
         data = response.json()
 
         if "posts" in data:
-            print(f"Found {len(data['posts'])} BlueSky posts for '{search_term}'")
+            post_count_actual = len(data['posts'])
+            print(f"\n[3/3] ✅ Found {post_count_actual} BlueSky posts for '{search_term}'")
+            if post_count_actual > 0:
+                print(f"First post author: {data['posts'][0].get('author', {}).get('handle', 'unknown')}")
+                print(f"First post text (preview): {data['posts'][0].get('record', {}).get('text', '')[:60]}...")
+            print(f"{'='*60}\n")
             return data["posts"]
         else:
-            print("No posts found in BlueSky response")
+            print("\n[3/3] ❌ No 'posts' key in BlueSky response")
+            print(f"Response keys: {list(data.keys())}")
+            print(f"{'='*60}\n")
             return []
 
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching BlueSky posts: {e}")
+        print(f"\n[3/3] ❌ Error fetching BlueSky posts: {e}")
+        print(f"{'='*60}\n")
         return []
 
 if __name__ == "__main__":

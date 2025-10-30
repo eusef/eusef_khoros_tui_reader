@@ -4,3 +4,7 @@ venv/
 .venv/
 .DS_Store
 *.json
+config.toml
+bluesky_data.json
+mastodon_data.json
+current_data.json

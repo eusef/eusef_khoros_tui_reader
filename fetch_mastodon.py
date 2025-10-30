@@ -29,20 +29,31 @@ def create_mastodon_session():
 
 def fetch_mastodon_posts(search_term="1password", post_count=50):
     """Fetch posts from Mastodon using the search API"""
+    print(f"\n{'='*60}")
+    print(f"🐘 MASTODON FETCH DEBUG")
+    print(f"{'='*60}")
     print(f"Starting Mastodon fetch for '{search_term}' at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Requested post count: {post_count}")
     
     # Get authentication credentials
+    print("\n[1/3] Getting Mastodon credentials...")
     server_url, access_token = create_mastodon_session()
     if not server_url or not access_token:
-        print("Failed to get Mastodon credentials - skipping Mastodon posts")
+        print("❌ Failed to get Mastodon credentials - skipping Mastodon posts")
+        print(f"  Server URL: {server_url or 'NOT SET'}")
+        print(f"  Access token: {'SET' if access_token else 'NOT SET'}")
+        print(f"{'='*60}\n")
         return []
+    print(f"✅ Credentials loaded")
+    print(f"  Server: {server_url}")
     
     # Use Mastodon v2 search API
     url = f"{server_url}/api/v2/search"
+    actual_limit = min(post_count, 40)  # API max is 40 per request
     params = {
         "q": search_term,
         "type": "statuses",  # Only search for statuses/posts
-        "limit": min(post_count, 40),  # API max is 40 per request
+        "limit": actual_limit,
         "resolve": "false"  # Don't resolve remote URLs for better performance
     }
     
@@ -51,21 +62,39 @@ def fetch_mastodon_posts(search_term="1password", post_count=50):
         "Content-Type": "application/json"
     }
     
+    print(f"\n[2/3] Fetching posts from Mastodon API...")
+    print(f"URL: {url}")
+    print(f"Search term: '{search_term}'")
+    print(f"Limit: {actual_limit}")
+    
     try:
         response = requests.get(url, params=params, headers=headers, timeout=30)
+        print(f"Response status code: {response.status_code}")
         response.raise_for_status()
         data = response.json()
         
         if "statuses" in data and data["statuses"]:
             statuses = data["statuses"]
-            print(f"Found {len(statuses)} Mastodon posts for '{search_term}'")
+            print(f"\n[3/3] ✅ Found {len(statuses)} Mastodon posts for '{search_term}'")
+            if len(statuses) > 0:
+                print(f"First post author: @{statuses[0].get('account', {}).get('username', 'unknown')}")
+                content_preview = statuses[0].get('content', '')[:60].replace('<', '').replace('>', '')
+                print(f"First post content (preview): {content_preview}...")
+            print(f"{'='*60}\n")
             return statuses
         else:
-            print("No posts found in Mastodon response")
+            print(f"\n[3/3] ⚠️  No statuses found in Mastodon response")
+            print(f"Response keys: {list(data.keys())}")
+            if "statuses" in data:
+                print(f"Statuses list length: {len(data['statuses'])}")
+            print(f"{'='*60}\n")
             return []
             
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching Mastodon posts: {e}")
+        print(f"\n[3/3] ❌ Error fetching Mastodon posts: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Response text: {e.response.text[:200]}")
+        print(f"{'='*60}\n")
         return []
 
 if __name__ == "__main__":
