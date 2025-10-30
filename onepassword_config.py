@@ -117,10 +117,54 @@ async def _get_secret_from_1password_async(ref: str) -> Optional[str]:
             
             # Check if it's a field not found error
             if "field cannot be found" in error_lower or "field not found" in error_lower:
-                print(f"Warning: Field not found in 1Password item for reference: {ref}")
-                print(f"  Error details: {error_msg}")
-                print(f"  Tip: Common field names are 'username', 'password', 'email', or 'credential'")
-                print(f"  Try using one of these field names instead in your .env.template file")
+                # Try common alternative field names automatically
+                # Parse the reference to extract vault/item/field
+                parts = ref[5:].split("/")
+                if len(parts) >= 3:
+                    vault = parts[0]
+                    item = parts[1]
+                    original_field = parts[2]
+                    
+                    # Map common field name alternatives
+                    field_alternatives = {
+                        "login": ["username", "email", "credential"],
+                        "user": ["username", "email", "login", "credential"],
+                        "pass": ["password", "credential"],
+                        "pwd": ["password", "credential"],
+                        "credential": ["username", "password", "email"],
+                    }
+                    
+                    # Get alternatives for the original field name (case-insensitive)
+                    alternatives = field_alternatives.get(original_field.lower(), [])
+                    
+                    # Also try common field names if no specific mapping exists
+                    if not alternatives:
+                        common_fields = ["username", "password", "email", "credential"]
+                        if original_field.lower() not in [f.lower() for f in common_fields]:
+                            alternatives = common_fields
+                    
+                    # Try each alternative
+                    for alt_field in alternatives:
+                        alt_ref = f"op://{vault}/{item}/{alt_field}"
+                        try:
+                            alt_value = await client.secrets.resolve(alt_ref)
+                            print(f"Warning: Field '{original_field}' not found, but found alternative field '{alt_field}'")
+                            print(f"  Consider updating your .env.template to use: {alt_ref}")
+                            return alt_value
+                        except Exception:
+                            continue  # Try next alternative
+                    
+                    # No alternatives worked, show helpful error
+                    print(f"Warning: Field not found in 1Password item for reference: {ref}")
+                    print(f"  Error details: {error_msg}")
+                    if alternatives:
+                        print(f"  Tried alternatives: {', '.join(alternatives)}")
+                    print(f"  Tip: Common field names are 'username', 'password', 'email', or 'credential'")
+                    print(f"  Try using one of these field names instead in your .env.template file")
+                else:
+                    print(f"Warning: Field not found in 1Password item for reference: {ref}")
+                    print(f"  Error details: {error_msg}")
+                    print(f"  Tip: Common field names are 'username', 'password', 'email', or 'credential'")
             elif "not found" in error_lower or "does not exist" in error_lower:
                 print(f"Warning: Item or vault not found in 1Password for reference: {ref}")
             else:
