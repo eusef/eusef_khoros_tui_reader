@@ -18,6 +18,8 @@ session_last_used = int(get_config_value("sessionLastUsed") or "0")
 def get_auth_token():
     """Get the authentication token, re-authenticating if necessary."""
     global session_key, session_start_time, session_last_used
+    import os
+    debug = os.getenv('FETCH_DEBUG') == '1'
     
     # Time calculations
     now = int(time.time() * 1000)
@@ -32,7 +34,8 @@ def get_auth_token():
         or session_start_time < two_hours_ago
         or session_key == ""
     ):
-        print("authenticating")
+        if debug:
+            print("authenticating")
         authenticate()
     
     # Update last used time
@@ -48,13 +51,16 @@ def get_hostname():
 def authenticate():
     """Authenticate and get a new session key."""
     global session_key, session_start_time
+    import os
+    debug = os.getenv('FETCH_DEBUG') == '1'
     
     url = (
         f"https://{hostname}/{tapestry}/s/restapi/vc/authentication/sessions/login"
         f"?user.login={username}&user.password={password}&restapi.response_format=json"
     )
 
-    print("url", url)
+    if debug:
+        print("url", url)
 
     try:
         response = requests.post(url)
@@ -66,7 +72,8 @@ def authenticate():
             raise Exception("Authentication failed")
         else:
             new_key = data["response"]["value"]["$"]
-            print("key", new_key)
+            if debug:
+                print("key", new_key)
 
             # Update environment variables
             os.environ["sessionKey"] = new_key

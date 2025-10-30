@@ -4,14 +4,20 @@ from datetime import datetime
 from auth import get_auth_token, get_hostname
 
 def fetch_posts(community_url, message_count=100):
-    print(f"Starting fetch at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    import os
+    debug = os.getenv('FETCH_DEBUG') == '1'
+    
+    if debug:
+        print(f"Starting fetch at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Get authentication token
     auth_token = get_auth_token()
     if not auth_token:
-        print("Error: No authentication token available")
+        if debug:
+            print("Error: No authentication token available")
         return None
-    print("Authentication successful")
+    if debug:
+        print("Authentication successful")
 
     # GraphQL query
     query = """
@@ -51,7 +57,8 @@ def fetch_posts(community_url, message_count=100):
 
     # Make the request
     url = f"https://{community_url}/t5/s/api/2.1/graphql"
-    print(f"Fetching messages from: {community_url}")
+    if debug:
+        print(f"Fetching messages from: {community_url}")
     
     request_payload = {
         "query": query,
@@ -65,7 +72,8 @@ def fetch_posts(community_url, message_count=100):
         timeout=30
     )
 
-    print(f"Response status: {response.status_code}")
+    if debug:
+        print(f"Response status: {response.status_code}")
 
     # Check if request was successful
     if response.status_code == 200:
@@ -73,21 +81,22 @@ def fetch_posts(community_url, message_count=100):
 
         # Extract the messages data
         messages = response_dict.get('data', {}).get('messages', {}).get('edges', [])
-        print(f"Found {len(messages)} messages")
+        if debug:
+            print(f"Found {len(messages)} messages")
 
-        # Extract the author information for each message
-        for i, message in enumerate(messages):
-            node = message.get('node', {})
-            author = node.get('author', {})
-            post_time = node.get('postTime', '')
-            subject = node.get('subject', '')
-            
-            print(f"Message {i+1}:")
-            print(f"  ID: {node.get('id')}")
-            print(f"  Subject: {subject}")
-            print(f"  Post Time: {post_time}")
-            print(f"  Author: {author.get('firstName')} {author.get('lastName')}")
-            print("  ---")
+            # Extract the author information for each message
+            for i, message in enumerate(messages):
+                node = message.get('node', {})
+                author = node.get('author', {})
+                post_time = node.get('postTime', '')
+                subject = node.get('subject', '')
+                
+                print(f"Message {i+1}:")
+                print(f"  ID: {node.get('id')}")
+                print(f"  Subject: {subject}")
+                print(f"  Post Time: {post_time}")
+                print(f"  Author: {author.get('firstName')} {author.get('lastName')}")
+                print("  ---")
 
         return response.json()
     else:
