@@ -18,20 +18,6 @@ for arg in "$@"; do
     fi
 done
 
-# Run unified fetch script (authenticates with 1Password only once)
-python ./fetch_all.py --khoros-count $KHOROS_COUNT --social-count $SOCIAL_COUNT $DEBUG_FLAG
-
-# Check if fetch was successful
-if [ $? -ne 0 ]; then
-    echo ""
-    echo "⚠️  Warning: Some data sources failed to fetch."
-    echo "   The TUI will load with whatever data is available."
-    echo ""
-fi
-
-echo "============================================================"
-echo "🎨 Starting TUI application..."
-echo "============================================================"
-echo ""
-
-python ./app.py
+# Run unified script that fetches data and starts app in a single Python process
+# This ensures 1Password authentication only happens once
+python ./start_combined.py --khoros-count $KHOROS_COUNT --social-count $SOCIAL_COUNT $DEBUG_FLAG

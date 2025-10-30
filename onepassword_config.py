@@ -10,6 +10,13 @@ try:
 except Exception:
     tomllib = None
 
+# Import nest_asyncio to allow asyncio.run() from within async contexts
+try:
+    import nest_asyncio
+    nest_asyncio.apply()
+except ImportError:
+    pass  # Will handle async contexts differently if not available
+
 # Cache for the 1Password client
 _op_client = None
 
@@ -198,17 +205,9 @@ def get_secret_from_1password(ref: str) -> Optional[str]:
     Returns:
         Secret value or None if not found
     """
-    # Use asyncio.run() to execute async code from sync context
-    try:
-        asyncio.get_running_loop()
-        # If we're in an async context, we can't use asyncio.run()
-        raise RuntimeError(
-            "Cannot retrieve secret from async context. "
-            "Use _get_secret_from_1password_async() instead."
-        )
-    except RuntimeError:
-        # No running loop, safe to use asyncio.run()
-        return asyncio.run(_get_secret_from_1password_async(ref))
+    # Use asyncio.run() to execute async code
+    # nest_asyncio allows this to work even from within async contexts
+    return asyncio.run(_get_secret_from_1password_async(ref))
 
 
 def _flatten_toml_config(config_toml: Dict) -> Dict[str, str]:
@@ -387,8 +386,8 @@ def get_config_value(key: str, default: Optional[str] = None) -> Optional[str]:
     """
     Get a configuration value, resolving 1Password references as needed.
     
-    This function provides a drop-in replacement for os.getenv() that
-    automatically resolves 1Password references.
+    This function prioritizes config.toml over environment variables,
+    providing a single source of truth for configuration.
     
     Args:
         key: Configuration key name
@@ -397,18 +396,32 @@ def get_config_value(key: str, default: Optional[str] = None) -> Optional[str]:
     Returns:
         Configuration value or default
     """
-    # First check environment variables (in case they're set explicitly)
-    value = os.getenv(key)
-    if value:
-        return value
-    
-    # Load config if not already loaded: prefer config.toml, fallback to .env.template
+    # Load config from file first: prefer config.toml, fallback to .env.template
+    # This ensures config.toml is the source of truth
     config = load_config_from_toml()
     if not config:
         config = load_config_from_env_template()
     
-    # Return from config cache
-    return config.get(key, default)
+    # Return from config cache if found
+    if key in config:
+        return config[key]
+    
+    # Only check environment variables as a fallback if not in config file
+    # (This handles cases where someone sets env vars manually)
+    value = os.getenv(key)
+    if value:
+        # If the env var contains an op:// reference, resolve it
+        # (nest_asyncio allows this to work even in async contexts)
+        if isinstance(value, str) and value.startswith("op://"):
+            resolved = get_secret_from_1password(value)
+            if resolved:
+                return resolved
+            # If resolution fails, fall through to default
+        else:
+            return value
+    
+    # Return default if not found anywhere
+    return default
 
 
 def clear_config_cache():

@@ -9,3 +9,4 @@ textual>=5.0.0
 html2text>=2025.4.0
 google-generativeai>=0.8.0
 onepassword-sdk==0.4.0b1
+nest-asyncio>=1.6.0
