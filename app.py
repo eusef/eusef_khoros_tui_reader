@@ -15,11 +15,11 @@ from loading_screen import LoadingScreen
 from debug_widget import DebugWidget
 from gemini_summarizer import GeminiSummarizer
 from summary_widget import SummaryWidget
-
-from fetch_bluesky import fetch_bluesky_posts
-from fetch_mastodon import fetch_mastodon_posts
+import json
+import os
+import re
  
- # Load messages from JSON file
+# Load messages from JSON file
 MESSAGES = []
 
 class FilterInput(Input):
@@ -148,7 +148,6 @@ class EmailApp(App):
                 return []
             
             print(f"→ Processing {len(mastodon_posts)} Mastodon posts from {json_file_path}...")
-            import re
             for i, post in enumerate(mastodon_posts):
                 try:
                     # Extract text content, handling HTML
@@ -359,14 +358,21 @@ class EmailApp(App):
         
         # Initialize the app as before
         if MESSAGES:
+            print(f"[TUI] About to update message list with {len(MESSAGES)} messages")
             # Get the message list widget and update it with loaded messages
             message_list = self.query_one("#message-list", MessageList)
+            print(f"[TUI] Found message_list widget: {message_list}")
+            print(f"[TUI] Calling update_messages...")
             message_list.update_messages(MESSAGES)
+            print(f"[TUI] Update complete. Message list now has {len(message_list.messages)} messages")
             # Give focus to the message list first
             message_list.focus()
             # Then select the first item (index 0) - this will trigger MessageSelected event
             if len(MESSAGES) > 0:
                 message_list.index = 0
+                print(f"[TUI] Set index to 0")
+        else:
+            print(f"[TUI] WARNING: MESSAGES is empty or None!")
         
         self.loading_complete = True
 
