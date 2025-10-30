@@ -37,26 +37,36 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 2. Configure Environment (config.toml)
 
-Configure the `.env.template` file with your Khoros community, BlueSky, and Mastodon credentials:
+The app now uses a TOML configuration file. Copy `config.example.toml` to `config.toml` and edit the values:
 
-```bash
-hostname=your-community.khoros.com
-username=op://path/to/1password/username
-password=op://path/to/1password/password
-sessionStartTime=
-sessionLastUsed=
-sessionKey=
-tapestry=t5
-BLUESKY_HANDLE=op://path/to/1password/bluesky-handle
-BLUESKY_APP_PASSWORD=op://path/to/1password/bluesky-app-password
-MASTODON_SERVER=op://path/to/1password/mastodon-server
-MASTODON_ACCESS_TOKEN=op://path/to/1password/mastodon-access-token
-GEMINI_API_KEY=op://path/to/1password/gemini-api-key
+```toml
+[onepassword]
+# Optional: set if you have multiple 1Password accounts
+account_name = "My Personal"
+
+[khoros]
+hostname = "your-community.khoros.com"
+tapestry = "t5"
+username = "op://vault/item/username"
+password = "op://vault/item/password"
+
+[bluesky]
+handle = "op://vault/item/handle"
+app_password = "op://vault/item/app-password"
+
+[mastodon]
+server = "op://vault/item/server"
+access_token = "op://vault/item/access-token"
+
+[gemini]
+api_key = "op://vault/item/api-key"
 ```
 
-**Note**: The `sessionStartTime`, `sessionLastUsed`, and `sessionKey` fields are managed automatically by the application.
+Notes:
+- You can keep using `.env.template` if you prefer; `config.toml` takes precedence.
+- 1Password references (`op://vault/item/field`) are resolved automatically via the SDK.
 
 ### 3. Set Up 1Password Integration
 
@@ -70,8 +80,7 @@ GEMINI_API_KEY=op://path/to/1password/gemini-api-key
      - Turn on **Touch ID** (Mac) or **Unlock using system authentication** (Linux)
 
 2. **Set Account Name** (if you have multiple 1Password accounts):
-   - Set the `ONEPASSWORD_ACCOUNT_NAME` environment variable to match your account name as shown in the 1Password desktop app sidebar
-   - Example: `export ONEPASSWORD_ACCOUNT_NAME="My Personal"`
+   - Prefer setting it in `config.toml` under `[onepassword] account_name`, or set `ONEPASSWORD_ACCOUNT_NAME` in your shell.
 
 3. **Store Credentials in 1Password**:
    - Store your Khoros credentials, BlueSky credentials, Mastodon credentials, and Gemini API key in 1Password

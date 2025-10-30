@@ -1,0 +1,27 @@
+# Khoros TUI Reader configuration (TOML)
+# Copy this file to `config.toml` and fill in your values.
+
+[onepassword]
+# If you have multiple 1Password accounts, set the account name as shown in the desktop app sidebar
+# You can also store this in 1Password and reference it via op:// if you prefer
+account_name = "My Personal"
+
+[khoros]
+hostname = "your-community.khoros.com"
+tapestry = "t5"
+# Use 1Password references where possible
+username = "op://VaultName/ItemName/username"
+password = "op://VaultName/ItemName/password"
+
+[bluesky]
+handle = "op://VaultName/BlueSky/handle"
+app_password = "op://VaultName/BlueSky/app-password"
+
+[mastodon]
+server = "op://VaultName/Mastodon/server"        # e.g., mastodon.social
+access_token = "op://VaultName/Mastodon/access-token"
+
+[gemini]
+api_key = "op://VaultName/Gemini/api-key"
+
+

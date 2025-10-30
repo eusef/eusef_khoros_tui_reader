@@ -5,6 +5,10 @@ Handles authentication and secret retrieval using the 1Password SDK with local a
 import os
 import asyncio
 from typing import Optional, Dict
+try:
+    import tomllib  # Python 3.11+
+except Exception:
+    tomllib = None
 
 # Cache for the 1Password client
 _op_client = None
@@ -207,6 +211,92 @@ def get_secret_from_1password(ref: str) -> Optional[str]:
         return asyncio.run(_get_secret_from_1password_async(ref))
 
 
+def _flatten_toml_config(config_toml: Dict) -> Dict[str, str]:
+    """Flatten structured TOML config into legacy flat keys used by get_config_value."""
+    flattened: Dict[str, str] = {}
+    # 1Password
+    op_cfg = config_toml.get("onepassword", {}) if isinstance(config_toml, dict) else {}
+    account_name = op_cfg.get("account_name")
+    if account_name:
+        # Also set env to help SDK initialization
+        os.environ["ONEPASSWORD_ACCOUNT_NAME"] = str(account_name)
+        flattened["ONEPASSWORD_ACCOUNT_NAME"] = str(account_name)
+
+    # Khoros
+    kh = config_toml.get("khoros", {})
+    if isinstance(kh, dict):
+        if kh.get("hostname"): flattened["hostname"] = str(kh["hostname"])
+        if kh.get("tapestry"): flattened["tapestry"] = str(kh["tapestry"])
+        if kh.get("username"): flattened["username"] = str(kh["username"])
+        if kh.get("password"): flattened["password"] = str(kh["password"])
+
+    # BlueSky
+    bs = config_toml.get("bluesky", {})
+    if isinstance(bs, dict):
+        if bs.get("handle"): flattened["BLUESKY_HANDLE"] = str(bs["handle"])
+        if bs.get("app_password"): flattened["BLUESKY_APP_PASSWORD"] = str(bs["app_password"]) 
+
+    # Mastodon
+    md = config_toml.get("mastodon", {})
+    if isinstance(md, dict):
+        if md.get("server"): flattened["MASTODON_SERVER"] = str(md["server"]) 
+        if md.get("access_token"): flattened["MASTODON_ACCESS_TOKEN"] = str(md["access_token"]) 
+
+    # Gemini
+    gm = config_toml.get("gemini", {})
+    if isinstance(gm, dict):
+        if gm.get("api_key"): flattened["GEMINI_API_KEY"] = str(gm["api_key"]) 
+
+    return flattened
+
+
+def load_config_from_toml(config_path: str = "config.toml") -> Dict[str, str]:
+    """
+    Load configuration from config.toml, resolving 1Password references.
+    Returns a flat dict of keys for compatibility with existing code.
+    """
+    global _config_cache
+    if _config_cache is not None:
+        return _config_cache
+
+    config: Dict[str, str] = {}
+    if not os.path.exists(config_path):
+        return config
+    if tomllib is None:
+        print("Warning: tomllib not available; cannot read config.toml. Using .env.template fallback if present.")
+        return config
+
+    try:
+        with open(config_path, "rb") as f:
+            parsed = tomllib.load(f)
+
+        # Flatten into legacy keys used across the app
+        flat = _flatten_toml_config(parsed)
+
+        # Resolve 1Password account name first if provided and not an op:// ref
+        if flat.get("ONEPASSWORD_ACCOUNT_NAME") and not str(flat["ONEPASSWORD_ACCOUNT_NAME"]).startswith("op://"):
+            os.environ["ONEPASSWORD_ACCOUNT_NAME"] = flat["ONEPASSWORD_ACCOUNT_NAME"]
+
+        # Resolve op:// references
+        for k, v in list(flat.items()):
+            if isinstance(v, str) and v.startswith("op://"):
+                resolved = get_secret_from_1password(v)
+                if resolved:
+                    config[k] = resolved
+                else:
+                    print(f"Warning: Could not resolve 1Password reference for {k}: {v}")
+            else:
+                if v:
+                    config[k] = v
+
+        _config_cache = config
+        print(f"Loaded {len(config)} configuration values from {config_path}")
+        return config
+    except Exception as e:
+        print(f"Error loading configuration from {config_path}: {e}")
+        return config
+
+
 def load_config_from_env_template(template_path: str = ".env.template") -> Dict[str, str]:
     """
     Load configuration from .env.template file, resolving 1Password references.
@@ -312,8 +402,10 @@ def get_config_value(key: str, default: Optional[str] = None) -> Optional[str]:
     if value:
         return value
     
-    # Load config from template if not already loaded
-    config = load_config_from_env_template()
+    # Load config if not already loaded: prefer config.toml, fallback to .env.template
+    config = load_config_from_toml()
+    if not config:
+        config = load_config_from_env_template()
     
     # Return from config cache
     return config.get(key, default)
