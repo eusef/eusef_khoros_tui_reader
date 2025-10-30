@@ -1,16 +1,16 @@
 import requests
 import json
-import os
 from datetime import datetime
+from onepassword_config import get_config_value
 
 def create_bluesky_session():
     """Create a BlueSky session and return the access token"""
-    bluesky_handle = os.getenv("BLUESKY_HANDLE")
-    bluesky_password = os.getenv("BLUESKY_APP_PASSWORD")
+    bluesky_handle = get_config_value("BLUESKY_HANDLE")
+    bluesky_password = get_config_value("BLUESKY_APP_PASSWORD")
     
     if not bluesky_handle or not bluesky_password:
-        print("BlueSky credentials not found in environment variables")
-        print("Please set BLUESKY_HANDLE and BLUESKY_APP_PASSWORD")
+        print("BlueSky credentials not found in configuration")
+        print("Please ensure BLUESKY_HANDLE and BLUESKY_APP_PASSWORD are set in .env.template with valid 1Password references")
         return None
     
     try:

@@ -4,18 +4,16 @@
 import os
 import time
 import requests
-from dotenv import load_dotenv
+from onepassword_config import get_config_value
 
-load_dotenv()
-
-# Load environment variables
-session_key = os.getenv("sessionKey", "")
-hostname = os.getenv("hostname")
-tapestry = os.getenv("tapestry")
-username = os.getenv("username")
-password = os.getenv("password")
-session_start_time = int(os.getenv("sessionStartTime") or "0")
-session_last_used = int(os.getenv("sessionLastUsed") or "0")
+# Load configuration from 1Password SDK (replaces dotenv)
+session_key = get_config_value("sessionKey", "")
+hostname = get_config_value("hostname")
+tapestry = get_config_value("tapestry")
+username = get_config_value("username")
+password = get_config_value("password")
+session_start_time = int(get_config_value("sessionStartTime") or "0")
+session_last_used = int(get_config_value("sessionLastUsed") or "0")
 
 def get_auth_token():
     """Get the authentication token, re-authenticating if necessary."""
@@ -55,6 +53,8 @@ def authenticate():
         f"https://{hostname}/{tapestry}/s/restapi/vc/authentication/sessions/login"
         f"?user.login={username}&user.password={password}&restapi.response_format=json"
     )
+
+    print("url", url)
 
     try:
         response = requests.post(url)

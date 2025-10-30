@@ -5,7 +5,7 @@ A modern terminal-based user interface for reading Khoros forum messages, BlueSk
 ## Features
 
 - **📱 Modern TUI Interface**: Built with Textual for a responsive, modern terminal experience
-- **🔐 Secure Authentication**: Integrated with 1Password CLI for secure credential management
+- **🔐 Secure Authentication**: Integrated with 1Password SDK (local authentication via desktop app) for secure credential management
 - **📨 Message Browsing**: Browse forum messages with subject, author, and timestamp information
 - **🦋 BlueSky Integration**: Fetch and display BlueSky posts alongside Khoros messages
 - **🐘 Mastodon Integration**: Fetch and display Mastodon posts from any instance
@@ -17,8 +17,9 @@ A modern terminal-based user interface for reading Khoros forum messages, BlueSk
 
 ## Prerequisites
 
-- Python 3.8+
-- 1Password CLI (`op`) installed and authenticated
+- Python 3.10+ (required for 1Password SDK)
+- 1Password subscription
+- Latest beta release of the 1Password desktop app with desktop integrations enabled
 - Access to a Khoros community
 - BlueSky account with App Password (optional, for BlueSky integration)
 - Mastodon account with Access Token (optional, for Mastodon integration)
@@ -59,10 +60,22 @@ GEMINI_API_KEY=op://path/to/1password/gemini-api-key
 
 ### 3. Set Up 1Password Integration
 
-1. Install 1Password CLI: https://1password.com/downloads/command-line/
-2. Authenticate with your 1Password account: `op signin`
-3. Store your Khoros credentials, BlueSky credentials, Mastodon credentials, and Gemini API key in 1Password
-4. Update the `.env.template` file with the correct 1Password references
+1. **Enable Desktop App Integration**:
+   - Open and unlock the 1Password desktop app
+   - Select your account or collection at the top of the sidebar
+   - Navigate to **Settings** → **Developer**
+   - Under "Integrate with the 1Password SDKs", select **Integrate with other apps**
+   - (Optional) To use biometric authentication (e.g., Touch ID on Mac):
+     - Navigate to **Settings** → **Security**
+     - Turn on **Touch ID** (Mac) or **Unlock using system authentication** (Linux)
+
+2. **Set Account Name** (if you have multiple 1Password accounts):
+   - Set the `ONEPASSWORD_ACCOUNT_NAME` environment variable to match your account name as shown in the 1Password desktop app sidebar
+   - Example: `export ONEPASSWORD_ACCOUNT_NAME="My Personal"`
+
+3. **Store Credentials in 1Password**:
+   - Store your Khoros credentials, BlueSky credentials, Mastodon credentials, and Gemini API key in 1Password
+   - Update the `.env.template` file with the correct 1Password references (format: `op://vault/item/field`)
 
 ### 4. Run the Application
 
@@ -77,15 +90,17 @@ GEMINI_API_KEY=op://path/to/1password/gemini-api-key
 
 #### Option B: Run Components Individually
 ```bash
-# Test authentication
-env $(op inject -i ./.env.template | xargs) python ./auth.py
+# Test authentication (secrets loaded automatically via SDK)
+python ./auth.py
 
-# Fetch messages and save to file
-env $(op inject -i ./.env.template | xargs) python ./fetch_posts.py --write-output --output-file ./current_data.json
+# Fetch messages and save to file (secrets loaded automatically via SDK)
+python ./fetch_posts.py --write-output --output-file ./current_data.json
 
 # Start the TUI viewer
 python ./app.py
 ```
+
+**Note**: When you run the application, you may be prompted to authorize access through the 1Password desktop app. The authorization prompt will clearly show which account the integration will access.
 
 ## Usage
 
@@ -263,9 +278,12 @@ The modular architecture makes it easy to extend functionality:
 ### Common Issues
 
 **Authentication Errors**
-- Verify 1Password CLI is authenticated: `op whoami`
-- Check credential paths in `.env.template`
+- Verify 1Password desktop app integration is enabled (Settings → Developer → Integrate with other apps)
+- Ensure the 1Password desktop app is unlocked and running
+- Check that credential references in `.env.template` use the correct format: `op://vault/item/field`
+- If you have multiple accounts, set `ONEPASSWORD_ACCOUNT_NAME` environment variable
 - Ensure your Khoros community credentials are correct
+- You may need to reauthorize after 10 minutes of inactivity or when the desktop app locks
 
 **No Messages Displayed**
 - Check if `current_data.json` exists and contains data
@@ -281,14 +299,14 @@ The modular architecture makes it easy to extend functionality:
 - Verify BlueSky handle and app password are correctly stored in 1Password
 - Check that your BlueSky app password hasn't expired
 - Ensure your BlueSky account is active and not suspended
-- Test authentication by running: `env $(op inject -i ./.env.template | xargs) python -c "from fetch_bluesky import create_bluesky_session; print('Token:', create_bluesky_session() is not None)"`
+- Test authentication by running: `python -c "from fetch_bluesky import create_bluesky_session; print('Token:', create_bluesky_session() is not None)"`
 - If BlueSky fails, the app will continue with only Khoros messages
 
 **Mastodon Integration Issues**
 - Verify Mastodon server URL and access token are correctly stored in 1Password
 - Check that your Mastodon access token hasn't been revoked
 - Ensure your Mastodon server is accessible and not experiencing downtime
-- Test authentication by running: `env $(op inject -i ./.env.template | xargs) python -c "from fetch_mastodon import create_mastodon_session; server, token = create_mastodon_session(); print('Configured:', server is not None and token is not None)"`
+- Test authentication by running: `python -c "from fetch_mastodon import create_mastodon_session; server, token = create_mastodon_session(); print('Configured:', server is not None and token is not None)"`
 - Verify your access token has 'read' scope permissions
 - If Mastodon fails, the app will continue with other message sources
 

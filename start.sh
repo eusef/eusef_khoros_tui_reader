@@ -1,4 +1,5 @@
-# Inject secrets from 1Password, run fetch_posts.py, then start app.py
+# Run fetch_posts.py, then start app.py
+# Secrets are now loaded automatically via the 1Password SDK
 # Usage: ./start.sh [count]
 #   count: Number of messages to retrieve (default: 100)
 
@@ -7,10 +8,8 @@ MESSAGE_COUNT=${1:-100}
 
 echo "Fetching $MESSAGE_COUNT messages..."
 
-env $(op inject -i ./.env.template | xargs) \
-  python ./fetch_posts.py --write-output --output-file ./current_data.json --count $MESSAGE_COUNT
+python ./fetch_posts.py --write-output --output-file ./current_data.json --count $MESSAGE_COUNT
 
 echo "Starting TUI application..."
 
-env $(op inject -i ./.env.template | xargs) \
-  python ./app.py
+python ./app.py

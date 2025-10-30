@@ -1,10 +1,6 @@
-import os
 import google.generativeai as genai
-from dotenv import load_dotenv
+from onepassword_config import get_config_value
 from textual import log
-
-# Load environment variables
-load_dotenv()
 
 class GeminiSummarizer:
     """A class to handle message summarization using Google's Gemini API"""
@@ -12,7 +8,7 @@ class GeminiSummarizer:
     def __init__(self):
         """Initialize the Gemini API client"""
 
-        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.api_key = get_config_value("GEMINI_API_KEY")
         if not self.api_key:
             log.warning("GEMINI_API_KEY not found in environment variables")
             self.model = None

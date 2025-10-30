@@ -1,16 +1,16 @@
 import requests
 import json
-import os
 from datetime import datetime
+from onepassword_config import get_config_value
 
 def create_mastodon_session():
-    """Get Mastodon bearer token from environment variables"""
-    mastodon_server = os.getenv("MASTODON_SERVER")
-    mastodon_token = os.getenv("MASTODON_ACCESS_TOKEN")
+    """Get Mastodon bearer token from 1Password configuration"""
+    mastodon_server = get_config_value("MASTODON_SERVER")
+    mastodon_token = get_config_value("MASTODON_ACCESS_TOKEN")
     
     if not mastodon_server or not mastodon_token:
-        print("Mastodon credentials not found in environment variables")
-        print("Please set MASTODON_SERVER and MASTODON_ACCESS_TOKEN")
+        print("Mastodon credentials not found in configuration")
+        print("Please ensure MASTODON_SERVER and MASTODON_ACCESS_TOKEN are set in .env.template with valid 1Password references")
         return None, None
     
     # Ensure server URL has proper format
