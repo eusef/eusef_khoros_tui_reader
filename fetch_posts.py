@@ -71,12 +71,6 @@ def fetch_posts(community_url, message_count=100):
     if response.status_code == 200:
         response_dict = response.json()  # Safely parse JSON response
 
-        if args.write_output:
-            with open(args.output_file, 'w') as f:
-                json.dump(response_dict, f, indent=4)
-            print(f"Output written to {args.output_file}")
-            return response_dict
-
         # Extract the messages data
         messages = response_dict.get('data', {}).get('messages', {}).get('edges', [])
         print(f"Found {len(messages)} messages")
@@ -121,6 +115,12 @@ if __name__ == "__main__":
     try:
         result = fetch_posts(hostname, args.count)
         print(f"Successfully fetched {args.count} messages")
+        
+        # Write output if requested
+        if args.write_output and result:
+            with open(args.output_file, 'w') as f:
+                json.dump(result, f, indent=4)
+            print(f"Output written to {args.output_file}")
     except Exception as e:
         print("Error fetching data:")
         print(f"Technical details: {str(e)}")
