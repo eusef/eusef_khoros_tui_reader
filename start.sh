@@ -20,4 +20,5 @@ done
 
 # Run unified script that fetches data and starts app in a single Python process
 # This ensures 1Password authentication only happens once
+source ./.venv/bin/activate
 python ./start_combined.py --khoros-count $KHOROS_COUNT --social-count $SOCIAL_COUNT $DEBUG_FLAG
