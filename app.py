@@ -86,6 +86,15 @@ class EmailApp(App):
         # Store reference to message list for later use
         self.message_list = self.query_one("#message-list", MessageList)
     
+    def on_unmount(self) -> None:
+        """Called when app is unmounting - clean up resources"""
+        from onepassword_config import clear_op_client
+        try:
+            clear_op_client()
+            log.info("App unmounted, 1Password client closed")
+        except Exception as e:
+            log.error(f"Error closing 1Password client during unmount: {e}")
+    
     def load_bluesky_from_json(self, json_file_path: str = "bluesky_data.json") -> list:
         """Load BlueSky posts from JSON file"""
         bluesky_messages = []

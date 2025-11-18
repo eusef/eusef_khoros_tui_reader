@@ -430,7 +430,31 @@ def clear_config_cache():
     _config_cache = None
 
 
+async def _close_op_client_async():
+    """Close the 1Password client properly (async)."""
+    global _op_client
+    if _op_client is not None:
+        try:
+            # The 1Password SDK client should be closed to clean up resources
+            # Check if the client has a close method
+            if hasattr(_op_client, 'close'):
+                await _op_client.close()
+            elif hasattr(_op_client, '__aexit__'):
+                await _op_client.__aexit__(None, None, None)
+        except Exception as e:
+            print(f"Warning: Error closing 1Password client: {e}")
+        finally:
+            _op_client = None
+
+
 def clear_op_client():
     """Clear the 1Password client (useful for testing or re-authentication)."""
     global _op_client
-    _op_client = None
+    if _op_client is not None:
+        try:
+            asyncio.run(_close_op_client_async())
+        except Exception as e:
+            print(f"Warning: Could not properly close 1Password client: {e}")
+            _op_client = None
+    else:
+        _op_client = None
