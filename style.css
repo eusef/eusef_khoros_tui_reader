@@ -90,14 +90,25 @@
 #summary-widget {
     dock: top;
     width: 100%;
-    height: auto;
-    min-height: 6;
+    height: 1fr;
+    min-height: 10;
     border: round;
     border-title-color: #d79921; /* warm yellow */
     background: #3c3836;
     color: #ebdbb2;
     padding: 1 2;
-    margin: 1 0;
+    margin: 1 0 6 0;
     text-style: bold;
     display: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#summary-content {
+    width: 100%;
+    height: auto;
+    background: transparent;
+    color: #ebdbb2;
+    padding: 0;
+    border: none;
 }

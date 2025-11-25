@@ -57,6 +57,7 @@ class EmailApp(App):
         Binding("enter", "open_href", "Open in Browser"),
         Binding("d", "toggle_debug", "Toggle Debug", show=False),
         Binding("s", "summarize", "Summarize Message"),
+        Binding("S", "summarize_all", "Summarize All Visible Messages"),
         Binding("t", "test_gemini", "Test Gemini Connection", show=False),
     ]
 
@@ -417,6 +418,9 @@ class EmailApp(App):
             summary_widget.hide_summary()
             debug_widget = self.query_one("#debug-widget", DebugWidget)
             debug_widget.update_debug_info("Summary dismissed")
+            # Return focus to the message list
+            message_list = self.query_one("#message-list", MessageList)
+            message_list.focus()
             return
         
         # If no summary visible, handle filter cancellation
@@ -515,8 +519,8 @@ class EmailApp(App):
             debug_widget = self.query_one("#debug-widget", DebugWidget)
             debug_widget.update_debug_info("Generating summary with Gemini...")
             
-            # Give focus back to the message list
-            message_list.focus()
+            # Keep focus on summary widget so user can scroll when ready
+            summary_widget.focus()
         else:
             log.warning("No message selected for summarization")
             debug_widget = self.query_one("#debug-widget", DebugWidget)
@@ -534,9 +538,12 @@ class EmailApp(App):
             summary_widget = self.query_one("#summary-widget", SummaryWidget)
             summary_widget.set_summary(summary)
             
+            # Ensure focus is on the summary widget so user can scroll
+            summary_widget.focus()
+            
             # Update debug info
             debug_widget = self.query_one("#debug-widget", DebugWidget)
-            debug_widget.update_debug_info("Summary generated successfully")
+            debug_widget.update_debug_info("✅ Summary ready (use ↑/↓ to scroll)")
             
             log.info("Message summarization completed")
             
@@ -549,7 +556,7 @@ class EmailApp(App):
             
             # Update debug info
             debug_widget = self.query_one("#debug-widget", DebugWidget)
-            debug_widget.update_debug_info(f"Summarization error: {str(e)}")
+            debug_widget.update_debug_info(f"❌ Summarization error: {str(e)}")
     
     def action_test_gemini(self) -> None:
         """Action to test the Gemini API connection"""
@@ -590,6 +597,86 @@ class EmailApp(App):
             # Update debug info
             debug_widget = self.query_one("#debug-widget", DebugWidget)
             debug_widget.update_debug_info(f"Gemini test error: {str(e)}")
+    
+    def action_summarize_all(self) -> None:
+        """Action to summarize all visible messages in the message list"""
+        log.info("Summarize all action triggered (Shift+S pressed)")
+        
+        # Get the message list
+        message_list = self.query_one("#message-list", MessageList)
+        visible_messages = message_list.messages
+        
+        log.info(f"Number of visible messages: {len(visible_messages)}")
+        
+        # Always update debug widget to show the feature was triggered
+        debug_widget = self.query_one("#debug-widget", DebugWidget)
+        
+        if not visible_messages:
+            log.warning("No visible messages to summarize")
+            debug_widget.update_debug_info("⚠️ No visible messages to summarize")
+            return
+        
+        # Show immediate feedback
+        debug_widget.update_debug_info(f"🔄 Preparing to summarize {len(visible_messages)} messages...")
+        
+        # Check if summary is already visible - if so, hide it
+        summary_widget = self.query_one("#summary-widget", SummaryWidget)
+        log.info(f"Summary widget found: {summary_widget}")
+        log.info(f"Summary widget current display: {summary_widget.styles.display}")
+        
+        if summary_widget.styles.display != "none":
+            log.info("Summary already visible, hiding it")
+            summary_widget.hide_summary()
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info("Summary hidden")
+            # Give focus back to the message list
+            message_list.focus()
+            return
+        
+        # Show summary widget and start loading
+        log.info("Showing summary widget for all messages")
+        summary_widget.show_summary()
+        summary_widget.set_loading(True)
+        
+        # Start async summarization
+        self.call_after_refresh(self.summarize_all_messages_async, visible_messages)
+        
+        debug_widget.update_debug_info(f"Generating summary for {len(visible_messages)} messages...")
+        
+        # Keep focus on summary widget so user can scroll when ready
+        summary_widget.focus()
+    
+    async def summarize_all_messages_async(self, messages: list) -> None:
+        """Asynchronously summarize all visible messages using Gemini"""
+        try:
+            log.info(f"Starting summarization of {len(messages)} messages")
+            
+            # Generate summary
+            summary = await self.gemini_summarizer.summarize_multiple_messages(messages)
+            
+            # Update summary widget
+            summary_widget = self.query_one("#summary-widget", SummaryWidget)
+            summary_widget.set_summary(summary)
+            
+            # Ensure focus is on the summary widget so user can scroll
+            summary_widget.focus()
+            
+            # Update debug info
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info(f"✅ Summary of {len(messages)} messages ready (use ↑/↓ to scroll)")
+            
+            log.info("Multi-message summarization completed")
+            
+        except Exception as e:
+            log.error(f"Error during multi-message summarization: {e}")
+            
+            # Show error in summary widget
+            summary_widget = self.query_one("#summary-widget", SummaryWidget)
+            summary_widget.set_summary(f"Error generating summary: {str(e)}")
+            
+            # Update debug info
+            debug_widget = self.query_one("#debug-widget", DebugWidget)
+            debug_widget.update_debug_info(f"❌ Summarization error: {str(e)}")
     
     def show_filter(self) -> None:
         """Show the filter input"""
