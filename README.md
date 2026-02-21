@@ -328,6 +328,16 @@ The modular architecture makes it easy to extend functionality:
 ### Debug Mode
 Enable debug mode with the `d` key to see detailed application state and error information.
 
+## Roadmap / Coming Soon
+
+This tool currently supports Khoros, BlueSky, and Mastodon. Additional forum and social platforms will be added based on community demand. If there's a platform you'd like to see supported, open an issue.
+
+Planned improvements:
+
+- Additional forum platform integrations (based on demand)
+- Configurable search terms per platform
+- Export and reporting features
+
 ## Contributing
 
 1. Fork the repository
