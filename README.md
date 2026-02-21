@@ -2,6 +2,8 @@
 
 A modern terminal-based user interface for reading Khoros forum messages, BlueSky posts, and Mastodon posts using Textual. This application provides a rich, keyboard-driven experience for browsing and interacting with Khoros community content and social media posts from BlueSky and Mastodon directly from your terminal.
 
+![Khoros TUI Reader screenshot](Screenshot-TUI.png)
+
 ## Features
 
 - **📱 Modern TUI Interface**: Built with Textual for a responsive, modern terminal experience
