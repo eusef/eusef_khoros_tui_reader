@@ -32,14 +32,14 @@ A modern terminal-based user interface for reading Khoros forum messages, BlueSk
 ```bash
 git clone <repository-url>
 cd khoros_tui_reader
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+./setup.sh
 ```
+
+This creates a virtual environment, installs dependencies, and copies `config.example.toml` to `config.toml` for you.
 
 ### 2. Configure Environment (config.toml)
 
-The app now uses a TOML configuration file. Copy `config.example.toml` to `config.toml` and edit the values:
+Edit `config.toml` with your settings. The file uses 1Password secret references so no plaintext credentials are stored on disk:
 
 ```toml
 [onepassword]
@@ -269,9 +269,10 @@ khoros_tui_reader/
 ├── debug_widget.py       # Debug utilities
 ├── summary_widget.py     # AI summary display
 ├── style.css             # TUI styling
-├── start.sh              # Convenience script
+├── setup.sh              # First-time setup (run once)
+├── start.sh              # Launch script (run each time)
 ├── requirements.txt      # Python dependencies
-└── .env.template         # Environment configuration
+└── config.example.toml   # Configuration template
 ```
 
 ### Adding New Features

@@ -5,6 +5,20 @@
 #   social_count: Number of BlueSky/Mastodon posts to retrieve (default: 50)
 #   --debug: Enable verbose debug output (optional)
 
+# Check for virtual environment
+if [ ! -d ".venv" ]; then
+    echo "Error: Virtual environment not found."
+    echo "Run ./setup.sh first to set up the project, then try again."
+    exit 1
+fi
+
+# Check for config.toml
+if [ ! -f "config.toml" ]; then
+    echo "Error: config.toml not found."
+    echo "Run ./setup.sh first, then edit config.toml with your settings."
+    exit 1
+fi
+
 # Parse arguments
 KHOROS_COUNT=${1:-100}
 SOCIAL_COUNT=${2:-50}
