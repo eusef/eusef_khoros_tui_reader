@@ -1,7 +1,7 @@
 #!/bin/bash
-# Script to create a macOS .app bundle for Khoros TUI Reader
+# Script to create a macOS .app bundle for DevRel TUI Inbox
 
-APP_NAME="Khoros TUI Reader"
+APP_NAME="DevRel TUI Inbox"
 APP_DIR="$HOME/Desktop/$APP_NAME.app"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -26,7 +26,7 @@ cat > "$APP_DIR/Contents/Info.plist" << 'EOF'
     <key>CFBundleIdentifier</key>
     <string>com.khoros.tui.reader</string>
     <key>CFBundleName</key>
-    <string>Khoros TUI Reader</string>
+    <string>DevRel TUI Inbox</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

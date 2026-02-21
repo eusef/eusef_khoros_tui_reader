@@ -1,11 +1,11 @@
 #!/bin/bash
-# First-time setup for Khoros TUI Reader
+# First-time setup for DevRel TUI Inbox
 # Run this once after cloning the repo. Then use ./start.sh to launch.
 
 set -e
 
 echo "============================================================"
-echo "  Khoros TUI Reader - First-Time Setup"
+echo "  DevRel TUI Inbox - First-Time Setup"
 echo "============================================================"
 echo ""
 

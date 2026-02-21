@@ -1,8 +1,8 @@
-# Khoros TUI Reader
+# DevRel TUI Inbox
 
-A modern terminal-based user interface for reading Khoros forum messages, BlueSky posts, and Mastodon posts using Textual. This application provides a rich, keyboard-driven experience for browsing and interacting with Khoros community content and social media posts from BlueSky and Mastodon directly from your terminal.
+A terminal-based community inbox for reading Khoros forum messages, BlueSky posts, and Mastodon posts using Textual. A keyboard-driven experience for browsing and triaging community content and social media posts directly from your terminal.
 
-![Khoros TUI Reader screenshot](Screenshot-TUI.png)
+![DevRel TUI Inbox screenshot](Screenshot-TUI.png)
 
 ## Features
 
@@ -33,7 +33,7 @@ A modern terminal-based user interface for reading Khoros forum messages, BlueSk
 
 ```bash
 git clone <repository-url>
-cd khoros_tui_reader
+cd devrel_tui_inbox
 ./setup.sh
 ```
 
@@ -148,7 +148,7 @@ To enable BlueSky posts alongside your Khoros messages:
 1. Log into your BlueSky account at [bsky.app](https://bsky.app)
 2. Go to **Settings** → **Privacy and security** → **App passwords**
 3. Click **Add app password**
-4. Enter a name for this application (e.g., "Khoros TUI Reader")
+4. Enter a name for this application (e.g., "DevRel TUI Inbox")
 5. Click **Create app password**
 6. **Important**: Copy the generated password immediately - you won't be able to see it again!
 
@@ -185,7 +185,7 @@ To enable Mastodon posts alongside your Khoros and BlueSky messages:
 2. Go to **Preferences** → **Development** → **Your applications**
 3. Click **New application**
 4. Fill in the application details:
-   - **Application name**: "Khoros TUI Reader" (or any name you prefer)
+   - **Application name**: "DevRel TUI Inbox" (or any name you prefer)
    - **Application website**: Leave blank or add your repository URL
    - **Scopes**: Select **read** (you only need read access for searching posts)
 5. Click **Submit**
@@ -257,7 +257,7 @@ To enable AI-powered message summarization:
 
 ### Project Structure
 ```
-khoros_tui_reader/
+devrel_tui_inbox/
 ├── app.py                 # Main application
 ├── auth.py               # Authentication module
 ├── fetch_posts.py        # Khoros data fetching
